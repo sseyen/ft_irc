@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by alisseye, gvasylie.*
+*This project has been created as part of the 42 curriculum by alisseye, gvasylie, pibouill*
 
 # ft_irc
 

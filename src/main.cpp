@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 	
 	if(argc != 3)
 	{
-		std::cerr << "We accept only 3 arguments here!\n";
+		std::cerr << "We accept thy 3 arguments here!\n";
 		return 1;
 	}
 	int port_n = std::atoi(argv[1]);
@@ -20,30 +20,33 @@ int main(int argc, char **argv)
 	int ready;
 	while(true)
 	{
-		ready = poll(serv_poll, MAX_FDS, 0);
-		if(ready > 0)
-		{
-			if(serv_poll[0].revents & POLLIN)
-			{
-        		if (serv.cnctClient())
-				{
-					std::cout << "Deus Vult! (client accepted)\n";
-					ready--;
-				}
-        		else
-            		std::cerr << "Error connecting client\n";
-			}
-			// else
-			// {
-				// recv stuff
-			// }
-		}
-		else if(ready == -1)
+		ready = poll(serv_poll, MAX_FDS, 500);
+		if(ready == -1)
 		{
 			if(errno == EINTR)
 				continue;
 			std::cerr << "Error: " << std::strerror(errno) << '\n';
 	        break;
+		}
+		if(ready > 0)
+		{
+			if(serv_poll[0].revents & POLLIN)
+			{
+        		if (serv.cnctClient())
+					std::cout << "Deus Vult! (client accepted)\n";
+			}
+			else
+			{
+				for(int i = 1; i < MAX_FDS; i++)
+				{
+					if (serv_poll[i].fd == -1)
+					{
+						continue;
+					}
+					if (serv_poll[i].revents & (POLLIN | POLLHUP))
+						serv.recvMsg(i);
+				}
+			}
 		}
 	}
 	return 0;

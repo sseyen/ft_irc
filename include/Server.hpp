@@ -1,5 +1,5 @@
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef SERVER_HPP
+#define SERVER_HPP
 #include <list>
 #include <iostream>
 #include <cstring>
@@ -13,7 +13,7 @@
 #include <poll.h>
 #include <cstdlib>
 
-#define MAX_FDS 1024
+#define MAX_FDS 100
 #define MAX_BUFF 4096
 
 class Server {
@@ -22,11 +22,13 @@ class Server {
 		struct sockaddr_in _servAddr;
 		std::string _pswd;
 		struct pollfd _poll[MAX_FDS];
-		char _rBuff[MAX_BUFF];
+		char _rBuff[MAX_BUFF + 1];
+		char _sBuff[MAX_FDS][MAX_BUFF * 2];
 	public:
 		Server(int prtNum, std::string pswd);
 		int findFreeInd();
 		bool cnctClient();
+		void recvMsg(int i);
 		bool setNonBlocking(int fd);
 		void errHandl(std::string msg);
 		int getSrvFd();

@@ -1,29 +1,22 @@
-NAME     = ircserv
+NAME = deus_irc
 
-CXX      = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -I include
+CXX = c++
 
-SRC_DIR  = src
-OBJ_DIR  = obj
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 
-SRCS     = $(wildcard $(SRC_DIR)/*.cpp)
-OBJS     = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+SRC = src/main.cpp src/Server.cpp
+
+OBJ = $(SRC:.cpp=.o)
 
 all: $(NAME)
 
-$(NAME): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(OBJS) -o $(NAME)
+$(NAME): $(OBJ)
+	$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-clean:
-	rm -rf $(OBJ_DIR)
+clean: 
+	rm -rf $(OBJ)
 
 fclean: clean
-	rm -f $(NAME)
+	rm -rf $(NAME)
 
 re: fclean all
-
-.PHONY: all clean fclean re

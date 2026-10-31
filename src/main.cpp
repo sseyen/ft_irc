@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 	int ready;
 	while(true)
 	{
-		ready = poll(serv_poll, MAX_FDS, 500);
+		ready = poll(serv_poll, MAX_FDS, -1);
 		if(ready == -1)
 		{
 			if(errno == EINTR)
@@ -40,9 +40,7 @@ int main(int argc, char **argv)
 				for(int i = 1; i < MAX_FDS; i++)
 				{
 					if (serv_poll[i].fd == -1)
-					{
 						continue;
-					}
 					if (serv_poll[i].revents & (POLLIN | POLLHUP))
 						serv.recvMsg(i);
 				}

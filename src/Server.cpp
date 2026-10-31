@@ -86,7 +86,7 @@ void Server::recvMsg(int i)
 	{
 		std::strcat(_sBuff[i], _rBuff);
 		std::cout << "Client " << _poll[i].fd << " wrote: ";
-		std::cout << _sBuff[i];
+		std::cout << _sBuff[i] << '\n';
 		//execute cmnd
 		std::memset(_sBuff[i], 0, MAX_BUFF * 2);
 	}
@@ -103,11 +103,7 @@ void Server::pollFds(int fd, int index, int events, int revents)
 
 bool Server::setNonBlocking(int fd)
 {
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags == -1)
-        return false;
-
-    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+    if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
         return false;
     return true;
 }

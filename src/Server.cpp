@@ -1,4 +1,4 @@
-#include "../include/Server.hpp"
+#include "Server.hpp"
 
 Server::Server(int prtNum, std::string pswd)
 {

@@ -4,15 +4,19 @@
 #include <string>
 #include <vector>
 
+class Channel;
+
 class Client {
 private:
 	int _fd;
 	std::string _nickname;
 	std::string _username;
 	std::string _hostname;
+	std::string _realname;
 
 	std::vector<Channel*> _channels;
 
+	bool _registered;
 	bool _passOk;
 
 	Client& operator=(Client const& rhs);
@@ -26,12 +30,17 @@ public:
 	const std::string& getNickname() const;
 	const std::string& getUsername() const;
 	const std::string& getHostname() const;
+	const std::string& getRealname() const;
+	std::string getPrefix() const;
 
 	void setNickname(const std::string& nickname);
 	void setUsername(const std::string& username);
 	void setHostname(const std::string& hostname);
-	void setPassOk();
+	void setRealname(const std::string& realname);
+	void setPassOk(bool ok);
+	void setRegistered();
 
+	bool isPassOk() const;
 	bool isRegistered() const;
 
 	void addChannel(Channel* channel);

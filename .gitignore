@@ -3,9 +3,15 @@
 
 # Editor
 .vscode
+compile_flags.txt
+.clang-format
 
 # Build
 *.a
 *.o
-ircserv
 obj/
+
+# exec
+*.out
+ircserv
+deus_irc

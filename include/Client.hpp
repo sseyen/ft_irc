@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+class Channel;
+
 class Client {
 private:
 	int _fd;

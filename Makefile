@@ -11,7 +11,9 @@ SRCS     = $(SRC_DIR)/main.cpp \
            $(SRC_DIR)/Client.cpp \
            $(SRC_DIR)/Channel.cpp \
            $(SRC_DIR)/Command.cpp \
-           $(SRC_DIR)/Registration.cpp
+		   $(SRC_DIR)/Registration.cpp \
+           $(SRC_DIR)/Mode.cpp
+
 OBJS     = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
 all: $(NAME)

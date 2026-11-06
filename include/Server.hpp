@@ -63,6 +63,8 @@ private:
 	void			cmdUser(Client& client, const Command& cmd);
 	void			cmdCap(Client& client, const Command& cmd);
 	void			cmdQuit(Client& client, const Command& cmd);
+	void			cmdMode(Client& client, const Command& cmd);
+	void			modeOperator(Client& client, Channel* channel, const Command& cmd, size_t& arg, bool sign);
 	void			tryRegister(Client& client);
 
 public:

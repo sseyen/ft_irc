@@ -173,6 +173,7 @@ void Server::execCommand(Client& client, const Command& cmd)
 		handlers["USER"] = &Server::cmdUser;
 		handlers["CAP"]  = &Server::cmdCap;
 		handlers["QUIT"] = &Server::cmdQuit;
+		handlers["MODE"] = &Server::cmdMode;
 	}
 
 	const std::string& name = cmd.getCommand();

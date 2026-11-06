@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "Channel.hpp"
 
 Server::Server(int prtNum, std::string pswd)
 {
@@ -28,6 +29,35 @@ Server::Server(int prtNum, std::string pswd)
 	pollFds(_servFd, 0, POLLIN, 0);
 	for(int i = 1; i < MAX_FDS; i++)
 		pollFds(-1, i, 0, 0);
+}
+Server::~Server() {
+	for (std::map<std::string, Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it) {
+		delete it->second;
+	}
+}
+
+Channel* Server::findChannel(std::string const& name) {
+	std::map<std::string, Channel*>::iterator it = _channels.find(name);
+	if (it == _channels.end())
+		return NULL;
+	return it->second;
+}
+
+Channel* Server::createChannel(std::string const& name) {
+	Channel* channel = findChannel(name);
+	if (!channel) {
+		channel = new Channel(name);
+		_channels[name] = channel;
+	}
+	return channel;
+}
+
+void Server::removeChannel(std::string const& name) {
+	std::map<std::string, Channel*>::iterator it = _channels.find(name);
+	if (it == _channels.end())
+		return;
+	delete it->second;
+	_channels.erase(it);
 }
 
 bool Server::cnctClient()

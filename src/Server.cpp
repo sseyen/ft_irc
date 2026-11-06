@@ -1,5 +1,6 @@
 #include "Server.hpp"
 #include "Channel.hpp"
+#include "Command.hpp"
 
 Server::Server(int prtNum, std::string pswd)
 {
@@ -137,6 +138,7 @@ void Server::recvMsg(int i)
 		std::cout << "Client " << _poll[i].fd << " wrote: ";
 		std::cout << _sBuff[i] << '\n';
 		//execute cmnd
+		handleBuffer(fd, std::string(_sBuff[i]));
 		std::memset(_sBuff[i], 0, MAX_BUFF * 2);
 	}
 	else

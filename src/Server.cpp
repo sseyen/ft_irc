@@ -15,11 +15,11 @@ Server::Server(int prtNum, std::string pswd)
 	sockaddr_in server_addr = {};
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(prtNum);
-	server_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
+	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	if (bind(_servFd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
 	{
 		close(_servFd);
-    	errHandl("Error while binding\n");;
+		errHandl("Error while binding\n");
 	}
 	if (listen(_servFd, SOMAXCONN) == -1)
 	{
@@ -30,34 +30,53 @@ Server::Server(int prtNum, std::string pswd)
 	for(int i = 1; i < MAX_FDS; i++)
 		pollFds(-1, i, 0, 0);
 }
-Server::~Server() {
-	for (std::map<std::string, Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it) {
+
+Server::~Server()
+{
+	for (std::map<std::string, Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it)
 		delete it->second;
+}
+
+/* ************************************************************************** */
+/*                                  Getters                                   */
+/* ************************************************************************** */
+
+int Server::getSrvFd()
+{
+	return _servFd;
+}
+
+struct pollfd* Server::getPoll()
+{
+	return _poll;
+}
+
+/* ************************************************************************** */
+/*                              Connections & I/O                             */
+/* ************************************************************************** */
+
+bool Server::setNonBlocking(int fd)
+{
+	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
+		return false;
+	return true;
+}
+
+int Server::findFreeInd()
+{
+	for(int i = 1; i < MAX_FDS; i++)
+	{
+		if(_poll[i].fd == -1)
+			return i;
 	}
+	return -1;
 }
 
-Channel* Server::findChannel(std::string const& name) {
-	std::map<std::string, Channel*>::iterator it = _channels.find(name);
-	if (it == _channels.end())
-		return NULL;
-	return it->second;
-}
-
-Channel* Server::createChannel(std::string const& name) {
-	Channel* channel = findChannel(name);
-	if (!channel) {
-		channel = new Channel(name);
-		_channels[name] = channel;
-	}
-	return channel;
-}
-
-void Server::removeChannel(std::string const& name) {
-	std::map<std::string, Channel*>::iterator it = _channels.find(name);
-	if (it == _channels.end())
-		return;
-	delete it->second;
-	_channels.erase(it);
+void Server::pollFds(int fd, int index, int events, int revents)
+{
+	_poll[index].fd = fd;
+	_poll[index].events = events;
+	_poll[index].revents = revents;
 }
 
 bool Server::cnctClient()
@@ -68,7 +87,7 @@ bool Server::cnctClient()
 	if(cli_fd == -1)
 	{
 		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
-        	return false;
+			return false;
 		std::cerr << "Error: " << std::strerror(errno) << '\n';
 		return false;
 	}
@@ -95,7 +114,7 @@ void Server::recvMsg(int i)
 	int chk_r = recv(_poll[i].fd, _rBuff, MAX_BUFF, MSG_DONTWAIT);
 	int fd = _poll[i].fd;
 	if (chk_r > 0)
-    	_rBuff[chk_r] = '\0';
+		_rBuff[chk_r] = '\0';
 	if(chk_r < 0)
 	{
 		std::cerr << "Error using recv\n";
@@ -124,39 +143,40 @@ void Server::recvMsg(int i)
 		std::strcat(_sBuff[i], _rBuff);
 }
 
-void Server::pollFds(int fd, int index, int events, int revents)
+void Server::errHandl(std::string msg)
 {
-	_poll[index].fd = fd;
-	_poll[index].events = events;
-	_poll[index].revents = revents;
-}
-
-bool Server::setNonBlocking(int fd)
-{
-    if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
-        return false;
-    return true;
-}
-
-int Server::findFreeInd()
-{
-	for(int i = 1; i < MAX_FDS; i++)
-	{
-		if(_poll[i].fd == -1)
-			return i;
-	}
-	return -1;
-}
-
-void Server::errHandl(std::string msg) {
 	std::cerr << msg;
 	_exit(1);
 }
 
-struct pollfd* Server::getPoll() {
-	return _poll;
+/* ************************************************************************** */
+/*                              Channel registry                              */
+/* ************************************************************************** */
+
+Channel* Server::findChannel(std::string const& name)
+{
+	std::map<std::string, Channel*>::iterator it = _channels.find(name);
+	if (it == _channels.end())
+		return NULL;
+	return it->second;
 }
 
-int Server::getSrvFd() {
-	return _servFd;
+Channel* Server::createChannel(std::string const& name)
+{
+	Channel* channel = findChannel(name);
+	if (!channel)
+	{
+		channel = new Channel(name);
+		_channels[name] = channel;
+	}
+	return channel;
+}
+
+void Server::removeChannel(std::string const& name)
+{
+	std::map<std::string, Channel*>::iterator it = _channels.find(name);
+	if (it == _channels.end())
+		return;
+	delete it->second;
+	_channels.erase(it);
 }

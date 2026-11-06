@@ -42,8 +42,25 @@ public:
 	size_t getLimit() const;
 	bool isLimited() const;
 
+	bool hasClient(Client* client) const;
 	bool isOperator(Client* client) const;
 	bool isInvited(Client* client) const;
+
+	void setTopic(std::string const& topic);
+	void setInviteOnly(bool value);
+	void setTopicRestricted(bool value);
+	void setKey(std::string const& key);
+	void setLimit(size_t limit);
+
+	void addClient(Client* client);
+	void removeClient(Client* client);
+	void addOperator(Client* client);
+	void removeOperator(Client* client);
+	void addInvite(Client* client);
+	void removeInvite(Client* client);
+
+	std::string canJoin(Client* client, std::string const& key) const;
+
 };
 
 #endif

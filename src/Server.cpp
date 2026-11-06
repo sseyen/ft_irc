@@ -1,6 +1,7 @@
 #include "Server.hpp"
 #include "Channel.hpp"
 #include "Command.hpp"
+#include "Client.hpp"
 
 Server::Server(int prtNum, std::string pswd)
 {
@@ -36,6 +37,14 @@ Server::~Server()
 {
 	for (std::map<std::string, Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it)
 		delete it->second;
+
+	for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+	{
+		close(it->first);
+		delete it->second;
+	}
+
+	close(_servFd);
 }
 
 /* ************************************************************************** */

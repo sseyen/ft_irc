@@ -125,21 +125,18 @@ void Server::recvMsg(int i)
 	int fd = _poll[i].fd;
 	if (chk_r > 0)
 		_rBuff[chk_r] = '\0';
-	if(chk_r < 0)
+	if(chk_r <= 0)
 	{
-		std::cerr << "Error using recv\n";
-		close(fd);
-		pollFds(-1, i, 0, 0);
-	}
-	if(chk_r == 0)
-	{
-		std::strcat(_sBuff[i], "QUIT\r\n\n");
-		std::cout << "Client " << _poll[i].fd << " disconnected from the server\n";
-		std::cout << _sBuff[i];
-		//execute QUIT
-		close(fd);
-		pollFds(-1, i, 0, 0);
-		std::memset(_sBuff[i], 0, MAX_BUFF * 2);
+		std::cout << "Client " << fd << " disconnected from the server\n";
+		std::map<int, Client*>::iterator it = _clients.find(fd);
+		if (it != _clients.end())
+			disconnectClient(*it->second);
+		else
+		{
+			close(fd);
+			pollFds(-1, i, 0, 0);
+		}
+		return;
 	}
 	if(chk_r >= 2 && _rBuff[chk_r - 1] == '\n' && _rBuff[chk_r - 2] == '\r')
 	{

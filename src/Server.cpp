@@ -191,3 +191,18 @@ void Server::removeChannel(std::string const& name)
 	delete it->second;
 	_channels.erase(it);
 }
+
+void Server::removeClientFromChannels(Client* client) {
+	std::vector<std::string> empty;
+
+	for (std::map<std::string, Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it) {
+		it->second->removeClient(client);
+		it->second->removeInvite(client);
+		if (it->second->getClients().empty())
+			empty.push_back(it->first);
+	}
+
+	for (size_t i = 0; i < empty.size(); i++)
+		removeChannel(empty[i]);
+}
+

@@ -87,6 +87,7 @@ public:
 	Channel*		findChannel(std::string const& name);
 	Channel*		createChannel(std::string const& name);
 	void			removeChannel(std::string const& name);
+	void			removeClientFromChannels(Client* client);
 };
 
 #endif

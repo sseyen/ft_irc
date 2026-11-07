@@ -34,6 +34,7 @@ Client* Server::findClientByNick(const std::string& nick)
 // client is dangling afterwards: callers must not touch it again.
 void Server::disconnectClient(Client& client)
 {
+	removeClientFromChannels(&client);
 	int fd = client.getFd();
 	for (int i = 1; i < MAX_FDS; ++i)
 	{

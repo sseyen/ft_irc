@@ -13,7 +13,8 @@ SRCS     = $(SRC_DIR)/main.cpp \
            $(SRC_DIR)/Command.cpp \
 		   $(SRC_DIR)/Registration.cpp \
            $(SRC_DIR)/Mode.cpp \
-           $(SRC_DIR)/Join.cpp
+           $(SRC_DIR)/Join.cpp \
+           $(SRC_DIR)/Privmsg.cpp
 
 OBJS     = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 

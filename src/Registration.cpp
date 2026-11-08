@@ -22,9 +22,11 @@ Client* Server::getClient(int fd)
 
 Client* Server::findClientByNick(const std::string& nick)
 {
+	const std::string folded = ircLower(nick);
+
 	for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 	{
-		if (it->second->getNickname() == nick)
+		if (ircLower(it->second->getNickname()) == folded)
 			return it->second;
 	}
 	return NULL;
@@ -124,10 +126,10 @@ void Server::cmdNick(Client& client, const Command& cmd)
 		return sendReply(client, ERR_ERRONEUSNICKNAME, nick + " :Erroneus nickname");
 
 	Client* owner = findClientByNick(nick);
-	if (owner == &client)
-		return;
-	if (owner)
+	if (owner && owner != &client)
 		return sendReply(client, ERR_NICKNAMEINUSE, nick + " :Nickname is already in use");
+	if (nick == client.getNickname())
+		return;
 
 	if (client.isRegistered())
 	{
@@ -177,6 +179,7 @@ void Server::execCommand(Client& client, const Command& cmd)
 		handlers["QUIT"] = &Server::cmdQuit;
 		handlers["MODE"] = &Server::cmdMode;
 		handlers["JOIN"] = &Server::cmdJoin;
+		handlers["PRIVMSG"] = &Server::cmdPrivmsg;
 	}
 
 	const std::string& name = cmd.getCommand();

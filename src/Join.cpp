@@ -17,7 +17,7 @@ static bool isValidChannelName(const std::string& name)
 	return name.find_first_of(" ,:\a") == std::string::npos;
 }
 
-static std::vector<std::string> splitList(const std::string& list)
+std::vector<std::string> splitList(const std::string& list)
 {
 	std::vector<std::string> items;
 	size_t start = 0;
@@ -108,9 +108,9 @@ void Server::joinChannel(Client& client, const std::string& name, const std::str
 	channel->addClient(&client);
 	client.addChannel(channel);
 
-	broadcast(*channel, ":" + client.getPrefix() + " JOIN " + name);
+	broadcast(*channel, ":" + client.getPrefix() + " JOIN " + channel->getName());
 	if (!channel->getTopic().empty())
-		sendReply(client, RPL_TOPIC, name + " :" + channel->getTopic());
+		sendReply(client, RPL_TOPIC, channel->getName() + " :" + channel->getTopic());
 	sendNamesList(client, *channel);
 }
 

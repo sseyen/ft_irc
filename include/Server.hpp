@@ -73,9 +73,13 @@ private:
 	void			partAllChannels(Client& client);
 	void			sendNamesList(Client& client, Channel& channel);
 
+	// PRIVMSG (Privmsg.cpp)
+	void			cmdPrivmsg(Client& client, const Command& cmd);
+	void			sendPrivmsg(Client& client, const std::string& target, const std::string& text);
+
 	// Broadcast (Server.cpp)
-	void			broadcast(Channel& channel, const std::string& msg, Client* except = NULL);	// every member, minus except
-	void			broadcastToPeers(Client& client, const std::string& msg);	// once to each client sharing a channel with client, client excluded
+	void			broadcast(Channel& channel, const std::string& msg, Client* except = NULL);
+	void			broadcastToPeers(Client& client, const std::string& msg);
 
 public:
 	Server(int prtNum, std::string pswd);
@@ -99,5 +103,9 @@ public:
 	void			removeChannel(std::string const& name);
 	void			removeClientFromChannels(Client* client);
 };
+
+std::vector<std::string>	splitList(const std::string& list);
+std::string				ircLower(const std::string& s);
+
 
 #endif

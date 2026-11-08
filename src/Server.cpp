@@ -165,9 +165,22 @@ void Server::errHandl(std::string msg)
 /*                              Channel registry                              */
 /* ************************************************************************** */
 
+// case insensitive lowercasing for channel/nick names lookups
+std::string ircLower(const std::string& s)
+{
+	std::string folded = s;
+
+	for (size_t i = 0; i < folded.size(); ++i)
+	{
+		if (folded[i] >= 'A' && folded[i] <= '^')
+			folded[i] += 'a' - 'A';
+	}
+	return folded;
+}
+
 Channel* Server::findChannel(std::string const& name)
 {
-	std::map<std::string, Channel*>::iterator it = _channels.find(name);
+	std::map<std::string, Channel*>::iterator it = _channels.find(ircLower(name));
 	if (it == _channels.end())
 		return NULL;
 	return it->second;
@@ -179,14 +192,14 @@ Channel* Server::createChannel(std::string const& name)
 	if (!channel)
 	{
 		channel = new Channel(name);
-		_channels[name] = channel;
+		_channels[ircLower(name)] = channel;
 	}
 	return channel;
 }
 
 void Server::removeChannel(std::string const& name)
 {
-	std::map<std::string, Channel*>::iterator it = _channels.find(name);
+	std::map<std::string, Channel*>::iterator it = _channels.find(ircLower(name));
 	if (it == _channels.end())
 		return;
 	delete it->second;

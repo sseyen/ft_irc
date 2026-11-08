@@ -2,6 +2,7 @@
 #include "Channel.hpp"
 #include "Command.hpp"
 #include "Client.hpp"
+#include <set>
 
 Server::Server(int prtNum, std::string pswd)
 {
@@ -130,7 +131,10 @@ void Server::recvMsg(int i)
 		std::cout << "Client " << fd << " disconnected from the server\n";
 		std::map<int, Client*>::iterator it = _clients.find(fd);
 		if (it != _clients.end())
+		{
+			broadcastToPeers(*it->second, ":" + it->second->getPrefix() + " QUIT :Connection closed");
 			disconnectClient(*it->second);
+		}
 		else
 		{
 			close(fd);
@@ -201,5 +205,37 @@ void Server::removeClientFromChannels(Client* client) {
 
 	for (size_t i = 0; i < empty.size(); i++)
 		removeChannel(empty[i]);
+}
+
+/* ************************************************************************** */
+/*                                 Broadcast                                  */
+/* ************************************************************************** */
+
+// msg broadcast to members of channel, except except
+void Server::broadcast(Channel& channel, const std::string& msg, Client* except)
+{
+	const std::vector<Client*>& members = channel.getClients();
+
+	for (size_t i = 0; i < members.size(); i++)
+	{
+		if (members[i] != except)
+			sendRaw(*members[i], msg);
+	}
+}
+
+// msg broadcast to each client sharing a channel with client, client excluded
+void Server::broadcastToPeers(Client& client, const std::string& msg)
+{
+	const std::vector<Channel*>& channels = client.getChannels();
+	std::set<Client*> peers;
+
+	for (size_t i = 0; i < channels.size(); i++)
+	{
+		const std::vector<Client*>& members = channels[i]->getClients();
+		peers.insert(members.begin(), members.end());
+	}
+	peers.erase(&client);
+	for (std::set<Client*>::iterator it = peers.begin(); it != peers.end(); ++it)
+		sendRaw(**it, msg);
 }
 

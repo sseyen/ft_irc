@@ -67,6 +67,16 @@ private:
 	void			modeOperator(Client& client, Channel* channel, const Command& cmd, size_t& arg, bool sign);
 	void			tryRegister(Client& client);
 
+	// JOIN (Join.cpp)
+	void			cmdJoin(Client& client, const Command& cmd);
+	void			joinChannel(Client& client, const std::string& name, const std::string& key);
+	void			partAllChannels(Client& client);
+	void			sendNamesList(Client& client, Channel& channel);
+
+	// Broadcast (Server.cpp)
+	void			broadcast(Channel& channel, const std::string& msg, Client* except = NULL);	// every member, minus except
+	void			broadcastToPeers(Client& client, const std::string& msg);	// once to each client sharing a channel with client, client excluded
+
 public:
 	Server(int prtNum, std::string pswd);
 	~Server();

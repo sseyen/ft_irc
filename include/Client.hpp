@@ -17,6 +17,7 @@ private:
 	std::vector<Channel*> _channels;
 
 	bool _registered;
+	bool _passGiven;
 	bool _passOk;
 
 	Client& operator=(Client const& rhs);
@@ -40,6 +41,7 @@ public:
 	void setPassOk(bool ok);
 	void setRegistered();
 
+	bool isPassGiven() const;
 	bool isPassOk() const;
 	bool isRegistered() const;
 

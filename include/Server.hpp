@@ -77,6 +77,17 @@ private:
 	void			cmdPrivmsg(Client& client, const Command& cmd);
 	void			sendPrivmsg(Client& client, const std::string& target, const std::string& text);
 
+	// KICK (Kick.cpp)
+	void			cmdKick(Client& client, const Command& cmd);
+	void			kickUser(Client& client, const std::string& chanName, const std::string& nick, const std::string& comment);
+
+	// INVITE (Invite.cpp)
+	void			cmdInvite(Client& client, const Command& cmd);
+
+	// TOPIC (Topic.cpp)
+	void			cmdTopic(Client& client, const Command& cmd);
+	void			sendTopic(Client& client, Channel& channel);
+
 	// Broadcast (Server.cpp)
 	void			broadcast(Channel& channel, const std::string& msg, Client* except = NULL);
 	void			broadcastToPeers(Client& client, const std::string& msg);

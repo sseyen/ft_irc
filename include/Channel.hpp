@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <vector>
 #include <string>
+#include <ctime>
 
 class Client;
 
@@ -11,6 +12,8 @@ class Channel {
 private:
 	std::string _name;
 	std::string _topic;
+	std::string _topicSetter;
+	time_t _topicTime;
 
 	std::vector<Client*> _clients;
 	std::vector<Client*> _operators;
@@ -30,6 +33,8 @@ public:
 
 	std::string const& getName() const;
 	std::string const& getTopic() const;
+	std::string const& getTopicSetter() const;
+	time_t getTopicTime() const;
 
 	std::vector<Client*> const& getClients() const;
 	std::vector<Client*> const& getOperators() const;
@@ -46,7 +51,7 @@ public:
 	bool isOperator(Client* client) const;
 	bool isInvited(Client* client) const;
 
-	void setTopic(std::string const& topic);
+	void setTopic(std::string const& topic, std::string const& setter);
 	void setInviteOnly(bool value);
 	void setTopicRestricted(bool value);
 	void setKey(std::string const& key);

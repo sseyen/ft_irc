@@ -180,6 +180,9 @@ void Server::execCommand(Client& client, const Command& cmd)
 		handlers["MODE"] = &Server::cmdMode;
 		handlers["JOIN"] = &Server::cmdJoin;
 		handlers["PRIVMSG"] = &Server::cmdPrivmsg;
+		handlers["KICK"] = &Server::cmdKick;
+		handlers["INVITE"] = &Server::cmdInvite;
+		handlers["TOPIC"] = &Server::cmdTopic;
 	}
 
 	const std::string& name = cmd.getCommand();

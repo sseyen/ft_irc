@@ -110,7 +110,7 @@ void Server::joinChannel(Client& client, const std::string& name, const std::str
 
 	broadcast(*channel, ":" + client.getPrefix() + " JOIN " + channel->getName());
 	if (!channel->getTopic().empty())
-		sendReply(client, RPL_TOPIC, channel->getName() + " :" + channel->getTopic());
+		sendTopic(client, *channel);
 	sendNamesList(client, *channel);
 }
 

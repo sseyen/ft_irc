@@ -1,4 +1,7 @@
 #include "Server.hpp"
+#include <csignal>
+
+static volatile sig_atomic_t running = 1;
 
 int chckPort(char **argv) {
 	int i = 0;
@@ -20,6 +23,21 @@ int chckPort(char **argv) {
     return port_n;
 }
 
+void handleSignal(int) {
+	running = 0;
+}
+
+void setupSignals() {
+	struct sigaction sa;
+
+	std::memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = handleSignal;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
+}
+
 /*** @brief Main function with the main loop.*/
 int main(int argc, char **argv)
 {	
@@ -38,10 +56,11 @@ int main(int argc, char **argv)
 	int port_n = chckPort(argv);
 	if(port_n == -1)
 		return 1;
+	setupSignals();
 	Server serv(port_n, argv[2]);
 	struct pollfd *serv_poll = serv.getPoll();
 	int ready;
-	while(true)
+	while(running)
 	{
 		// Checks server until something happens
 		ready = poll(serv_poll, MAX_FDS, -1);

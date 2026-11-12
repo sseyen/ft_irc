@@ -12,7 +12,12 @@ SRCS     = $(SRC_DIR)/main.cpp \
            $(SRC_DIR)/Channel.cpp \
            $(SRC_DIR)/Command.cpp \
 		   $(SRC_DIR)/Registration.cpp \
-           $(SRC_DIR)/Mode.cpp
+           $(SRC_DIR)/Mode.cpp \
+           $(SRC_DIR)/Join.cpp \
+           $(SRC_DIR)/Privmsg.cpp \
+           $(SRC_DIR)/Kick.cpp \
+           $(SRC_DIR)/Invite.cpp \
+           $(SRC_DIR)/Topic.cpp
 
 OBJS     = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 

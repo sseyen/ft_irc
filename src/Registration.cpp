@@ -22,9 +22,11 @@ Client* Server::getClient(int fd)
 
 Client* Server::findClientByNick(const std::string& nick)
 {
+	const std::string folded = ircLower(nick);
+
 	for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 	{
-		if (it->second->getNickname() == nick)
+		if (ircLower(it->second->getNickname()) == folded)
 			return it->second;
 	}
 	return NULL;
@@ -96,7 +98,7 @@ static bool isValidNick(const std::string& nick)
 void Server::cmdQuit(Client& client, const Command& cmd)
 {
 	std::string reason = cmd.getParamCount() ? cmd.getParam(0) : "Client Quit";
-	// TODO: relay ":<prefix> QUIT :Quit: <reason>" to channel members
+	broadcastToPeers(client, ":" + client.getPrefix() + " QUIT :Quit: " + reason);
 	sendRaw(client, "ERROR :Closing Link: (Quit: " + reason + ")");
 	disconnectClient(client);
 }
@@ -110,6 +112,7 @@ void Server::cmdPass(Client& client, const Command& cmd)
 		return sendReply(client, ERR_NEEDMOREPARAMS, "PASS :Not enough parameters");
 	// A wrong password is only reported in tryRegister, once NICK and USER are in
 	client.setPassOk(cmd.getParam(0) == _pswd);
+	tryRegister(client);
 }
 
 // NICK <nickname>
@@ -123,17 +126,17 @@ void Server::cmdNick(Client& client, const Command& cmd)
 		return sendReply(client, ERR_ERRONEUSNICKNAME, nick + " :Erroneus nickname");
 
 	Client* owner = findClientByNick(nick);
-	if (owner == &client)
-		return;
-	if (owner)
+	if (owner && owner != &client)
 		return sendReply(client, ERR_NICKNAMEINUSE, nick + " :Nickname is already in use");
+	if (nick == client.getNickname())
+		return;
 
 	if (client.isRegistered())
 	{
-		// TODO: also relay to every client sharing a channel
-		std::string oldPrefix = client.getPrefix();
+		std::string msg = ":" + client.getPrefix() + " NICK :" + nick;
 		client.setNickname(nick);
-		return sendRaw(client, ":" + oldPrefix + " NICK :" + nick);
+		broadcastToPeers(client, msg);
+		return sendRaw(client, msg);
 	}
 	client.setNickname(nick);
 	tryRegister(client);
@@ -175,6 +178,11 @@ void Server::execCommand(Client& client, const Command& cmd)
 		handlers["CAP"]  = &Server::cmdCap;
 		handlers["QUIT"] = &Server::cmdQuit;
 		handlers["MODE"] = &Server::cmdMode;
+		handlers["JOIN"] = &Server::cmdJoin;
+		handlers["PRIVMSG"] = &Server::cmdPrivmsg;
+		handlers["KICK"] = &Server::cmdKick;
+		handlers["INVITE"] = &Server::cmdInvite;
+		handlers["TOPIC"] = &Server::cmdTopic;
 	}
 
 	const std::string& name = cmd.getCommand();
@@ -188,10 +196,11 @@ void Server::execCommand(Client& client, const Command& cmd)
 	(this->*(it->second))(client, cmd);
 }
 
-// Completes registration once NICK and USER are both known
+// Completes registration once PASS, NICK and USER have all been received
 void Server::tryRegister(Client& client)
 {
-	if (client.isRegistered() || client.getNickname().empty() || client.getUsername().empty())
+	if (client.isRegistered() || !client.isPassGiven()
+		|| client.getNickname().empty() || client.getUsername().empty())
 		return;
 
 	if (!client.isPassOk())

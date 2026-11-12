@@ -1,6 +1,6 @@
 #include "Client.hpp"
 
-Client::Client(int fd) : _fd(fd), _registered(false), _passOk(false)
+Client::Client(int fd) : _fd(fd), _registered(false), _passGiven(false), _passOk(false)
 {
 
 }
@@ -14,6 +14,7 @@ Client::Client(Client const& other)
 	this->_realname = other._realname;
 	this->_channels = other._channels;
 	this->_registered = other._registered;
+	this->_passGiven = other._passGiven;
 	this->_passOk = other._passOk;
 }
 
@@ -28,6 +29,7 @@ Client& Client::operator=(Client const& rhs)
 		this->_realname = rhs._realname;
 		this->_channels = rhs._channels;
 		this->_registered = rhs._registered;
+		this->_passGiven = rhs._passGiven;
 		this->_passOk = rhs._passOk;
 	}
 	return *this;
@@ -91,12 +93,18 @@ void Client::setRealname(const std::string& realname)
 
 void Client::setPassOk(bool ok)
 {
+	_passGiven = true;
 	_passOk = ok;
 }
 
 void Client::setRegistered()
 {
 	_registered = true;
+}
+
+bool Client::isPassGiven() const
+{
+	return _passGiven;
 }
 
 bool Client::isPassOk() const
@@ -107,4 +115,31 @@ bool Client::isPassOk() const
 bool Client::isRegistered() const
 {
 	return _registered;
+}
+
+void Client::addChannel(Channel* channel)
+{
+	for (size_t i = 0; i < _channels.size(); ++i)
+	{
+		if (_channels[i] == channel)
+			return;
+	}
+	_channels.push_back(channel);
+}
+
+void Client::removeChannel(Channel* channel)
+{
+	for (size_t i = 0; i < _channels.size(); ++i)
+	{
+		if (_channels[i] == channel)
+		{
+			_channels.erase(_channels.begin() + i);
+			return;
+		}
+	}
+}
+
+const std::vector<Channel*>& Client::getChannels() const
+{
+	return _channels;
 }

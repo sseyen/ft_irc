@@ -1,7 +1,7 @@
 #include "Channel.hpp"
 
 Channel::Channel(std::string const& name)
-	: _name(name), _invite_only(false), _topic_restricted(false), _limit(0) 
+	: _name(name), _topicTime(0), _invite_only(false), _topic_restricted(false), _limit(0)
 {}
 
 Channel::~Channel() {
@@ -78,8 +78,18 @@ bool Channel::isInvited(Client* client) const {
 	return false;
 }
 
-void Channel::setTopic(std::string const& topic) {
+std::string const& Channel::getTopicSetter() const {
+	return _topicSetter;
+}
+
+time_t Channel::getTopicTime() const {
+	return _topicTime;
+}
+
+void Channel::setTopic(std::string const& topic, std::string const& setter) {
 	_topic = topic;
+	_topicSetter = setter;
+	_topicTime = std::time(NULL);
 }
 
 void Channel::setInviteOnly(bool value) {

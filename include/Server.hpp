@@ -67,6 +67,31 @@ private:
 	void			modeOperator(Client& client, Channel* channel, const Command& cmd, size_t& arg, bool sign);
 	void			tryRegister(Client& client);
 
+	// JOIN (Join.cpp)
+	void			cmdJoin(Client& client, const Command& cmd);
+	void			joinChannel(Client& client, const std::string& name, const std::string& key);
+	void			partAllChannels(Client& client);
+	void			sendNamesList(Client& client, Channel& channel);
+
+	// PRIVMSG (Privmsg.cpp)
+	void			cmdPrivmsg(Client& client, const Command& cmd);
+	void			sendPrivmsg(Client& client, const std::string& target, const std::string& text);
+
+	// KICK (Kick.cpp)
+	void			cmdKick(Client& client, const Command& cmd);
+	void			kickUser(Client& client, const std::string& chanName, const std::string& nick, const std::string& comment);
+
+	// INVITE (Invite.cpp)
+	void			cmdInvite(Client& client, const Command& cmd);
+
+	// TOPIC (Topic.cpp)
+	void			cmdTopic(Client& client, const Command& cmd);
+	void			sendTopic(Client& client, Channel& channel);
+
+	// Broadcast (Server.cpp)
+	void			broadcast(Channel& channel, const std::string& msg, Client* except = NULL);
+	void			broadcastToPeers(Client& client, const std::string& msg);
+
 public:
 	Server(int prtNum, std::string pswd);
 	~Server();
@@ -89,5 +114,9 @@ public:
 	void			removeChannel(std::string const& name);
 	void			removeClientFromChannels(Client* client);
 };
+
+std::vector<std::string>	splitList(const std::string& list);
+std::string				ircLower(const std::string& s);
+
 
 #endif

@@ -3,6 +3,16 @@
 #include "Command.hpp"
 #include "Client.hpp"
 
+/*** @brief Server constructor with port number and password args
+ * Creates a server socket fd with IPv4 family and TCP connection.
+ * Sets server to non-blocking. It doesn't wait indefinitely for action.
+ * Stores all variables that describes network adress.
+ * Converts addresses from host byte order into network byte order.
+ * Binds associated address name with corresponding address and port.
+ * Starts to listen to specified number of incoming TCP connections.
+ * Registers server socket and initializes connection slots to listen events.
+ * In general it registers server address, starts to listen connection and events.
+*/
 Server::Server(int prtNum, std::string pswd)
 {
 	_pswd = pswd;
@@ -28,6 +38,7 @@ Server::Server(int prtNum, std::string pswd)
 		close(_servFd);
 		errHandl("Error while listening\n");
 	}
+	// Here POLLIN means that incoming connection is ready to be accepted
 	pollFds(_servFd, 0, POLLIN, 0);
 	for(int i = 1; i < MAX_FDS; i++)
 		pollFds(-1, i, 0, 0);
@@ -65,6 +76,7 @@ struct pollfd* Server::getPoll()
 /*                              Connections & I/O                             */
 /* ************************************************************************** */
 
+/*** @brief Changes properties of descriptor with file flag and sets it to non-blocking */
 bool Server::setNonBlocking(int fd)
 {
 	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
@@ -72,6 +84,7 @@ bool Server::setNonBlocking(int fd)
 	return true;
 }
 
+/*** @brief Finds free index in _poll registry */
 int Server::findFreeInd()
 {
 	for(int i = 1; i < MAX_FDS; i++)
@@ -82,6 +95,7 @@ int Server::findFreeInd()
 	return -1;
 }
 
+/*** @brief Registers server socket and initializes connection slots to listen events. */
 void Server::pollFds(int fd, int index, int events, int revents)
 {
 	_poll[index].fd = fd;
@@ -89,6 +103,10 @@ void Server::pollFds(int fd, int index, int events, int revents)
 	_poll[index].revents = revents;
 }
 
+/*** @brief Here listening socket accepts newly dedicated socket. 
+ * Makes it non-blocking. It returns -1 when there nothing to receive.
+ * Finds and registers client socket on a free space.
+*/
 bool Server::cnctClient()
 {
 	sockaddr_in cli_addr = {};
@@ -118,6 +136,11 @@ bool Server::cnctClient()
 	return true;
 }
 
+/*** @brief Receives data from the client socket into the buffer of MAX_BUFF. 
+ * Makes it non-blocking. It returns -1 when there nothing to receive.
+ * If 0 or minus value received disconnect user from server.
+ * Writes out a message terminated with \r\n or adds to save buffer.
+*/
 void Server::recvMsg(int i)
 {
 	std::memset(_rBuff, 0, MAX_BUFF);
@@ -127,7 +150,9 @@ void Server::recvMsg(int i)
 		_rBuff[chk_r] = '\0';
 	if(chk_r <= 0)
 	{
-		std::cout << "Client " << fd << " disconnected from the server\n";
+		if(chk_r < 0)
+			std::cerr << "Error receiving data\n";
+		std::cout << "Client: " << fd << " disconnected from the server\n";
 		std::map<int, Client*>::iterator it = _clients.find(fd);
 		if (it != _clients.end())
 			disconnectClient(*it->second);
@@ -141,7 +166,7 @@ void Server::recvMsg(int i)
 	if(chk_r >= 2 && _rBuff[chk_r - 1] == '\n' && _rBuff[chk_r - 2] == '\r')
 	{
 		std::strcat(_sBuff[i], _rBuff);
-		std::cout << "Client " << _poll[i].fd << " wrote: ";
+		std::cout << "Client " << _poll[i].fd << ": ";
 		std::cout << _sBuff[i] << '\n';
 		//execute cmnd
 		handleBuffer(fd, std::string(_sBuff[i]));

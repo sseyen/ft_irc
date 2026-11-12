@@ -51,10 +51,11 @@ Server::~Server()
 		delete it->second;
 
 	for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it)
-	{
-		close(it->first);
 		delete it->second;
-	}
+
+	for (int i = 0; i < MAX_FDS; ++i)
+		if (_poll[i].fd != -1)
+			close(_poll[i].fd);
 
 	close(_servFd);
 }

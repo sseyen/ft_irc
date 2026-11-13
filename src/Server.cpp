@@ -46,6 +46,8 @@ Server::Server(int prtNum, std::string pswd)
 		close(_servFd);
 		errHandl("Error while listening\n");
 	}
+	for(int i = 0; i < MAX_FDS; i++)
+		std::memset(_sBuff[i], 0, MAX_BUFF * 2);
 	// Here POLLIN means that incoming connection is ready to be accepted
 	pollFds(_servFd, 0, POLLIN, 0);
 	for(int i = 1; i < MAX_FDS; i++)
@@ -153,15 +155,18 @@ bool Server::cnctClient()
 void Server::recvMsg(int i)
 {
 	std::memset(_rBuff, 0, MAX_BUFF);
-	int chk_r = recv(_poll[i].fd, _rBuff, MAX_BUFF, MSG_DONTWAIT);
+	int chk_r = recv(_poll[i].fd, _rBuff, MAX_BUFF, 0);
 	int fd = _poll[i].fd;
-	if (chk_r > 0)
+	if(chk_r > 0)
 		_rBuff[chk_r] = '\0';
-	if(chk_r <= 0)
+	size_t sbuff_l = strlen(_sBuff[i]);
+	if(chk_r <= 0 || sbuff_l + chk_r >= sizeof(_sBuff[i]))
 	{
-		if(chk_r < 0)
+		if(sbuff_l + chk_r >= sizeof(_sBuff[i]))
+			std::cerr << "Socket " << fd << ": message too long\n";
+		else if(chk_r < 0)
 			std::cerr << "Error receiving data\n";
-		std::cout << "Client: " << fd << " disconnected from the server\n";
+		std::cout << "Socket " << fd << ": disconnected from the server\n";
 		std::map<int, Client*>::iterator it = _clients.find(fd);
 		if (it != _clients.end())
 		{
@@ -178,9 +183,8 @@ void Server::recvMsg(int i)
 	if(chk_r >= 2 && _rBuff[chk_r - 1] == '\n' && _rBuff[chk_r - 2] == '\r')
 	{
 		std::strcat(_sBuff[i], _rBuff);
-		std::cout << "Client " << _poll[i].fd << ": ";
+		std::cout << "Socket " << _poll[i].fd << ": ";
 		std::cout << _sBuff[i] << '\n';
-		//execute cmnd
 		handleBuffer(fd, std::string(_sBuff[i]));
 		std::memset(_sBuff[i], 0, MAX_BUFF * 2);
 	}

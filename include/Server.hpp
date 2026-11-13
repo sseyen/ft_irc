@@ -21,7 +21,7 @@
 #include "Command.hpp"
 
 #define MAX_FDS 100
-#define MAX_BUFF 4096
+#define MAX_BUFF 512
 
 #define SERVER_NAME		"deus_irc"
 #define SERVER_VERSION	"1.0"

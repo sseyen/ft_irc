@@ -75,9 +75,9 @@ int main(int argc, char **argv)
 		{
 			if(serv_poll[0].revents & POLLIN)
 			{
-				// Client accepted to the server
+				// Socket accepted to the server
         		if (serv.cnctClient())
-					std::cout << "Deus Vult! (client accepted)\n";
+					std::cout << "Deus Vult! (socket accepted)\n";
 			}
 			// Check all connectioins
 			for(int i = 1; i < MAX_FDS; i++)

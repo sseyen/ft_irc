@@ -20,6 +20,13 @@ Server::Server(int prtNum, std::string pswd)
 	_servFd = socket(AF_INET, SOCK_STREAM, 0);
 	if(_servFd == -1)
 		errHandl("Error oppening socket\n");
+	int opt = 1;
+	if (setsockopt(_servFd, SOL_SOCKET, SO_REUSEADDR,
+               &opt, sizeof(opt)) < 0)
+	{
+		close(_servFd);
+		errHandl("Error using setsockopt\n");
+	}
 	if (!setNonBlocking(_servFd))
 	{
 		close(_servFd);

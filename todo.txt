@@ -1,0 +1,37 @@
+Critical: server crash or memory corruption
+1. recvMsg (src/Server.cpp:122) does an unbounded strcat into _sBuff[i] (8192 bytes). A client sending data with no \r\n overflows it.
+2. SIGPIPE kills the server when writing to a closed socket (exit 141). Still unfixed; add signal(SIGPIPE, SIG_IGN) in setupSignals() (main.cpp).
+
+Buffer handling and I/O
+
+3. Lines only run if the chunk ends in \r\n. In A\r\nB, A waits until a later chunk happens to end cleanly.
+4. Bare \n is never processed: handleBuffer accepts it but the recvMsg check blocks it, so plain nc doesn't work.
+5. sendRaw calls send() directly, with no output buffer or POLLOUT. A partial send or EAGAIN loses data, and the subject requires I/O through poll.
+6. recv returning -1 always counts as a disconnect, including EAGAIN/EINTR. (db8e7e7 only added an error log.)
+7. The stale-data path: a connection that sends a partial line and leaves before any full command takes the else branch, which doesn't clear _sBuff[i]. The next client in that slot inherits the data.
+8. Over-long lines are dropped silently; should send 417.
+9. Embedded NUL bytes truncate the buffer, because it's handled as a C string.
+
+MODE (src/Mode.cpp)
+
+10. Changes are never broadcast, so other members never see +o, +i and so on.
+11. MODE #c always answers +, ignoring the actual modes and params.
+12. User-mode requests like MODE nick +i, which clients send on connect, get 403. Should be 221/501/502; those constants already exist.
+13. Missing params for +k, +l, +o are ignored silently; should send 461.
+14. +l uses atoi: 5abc becomes 5, and overflow is undefined. Invalid values get no error.
+15. MODE #c b gets 472, though clients query it on join. Needs an empty ban list reply (368, not defined yet).
+16. -k takes no argument, so in -k key +l 5 the +l consumes key and is dropped.
+17. +k never validates the key; 525 is unused.
+
+Missing commands
+
+19. PING/PONG returns 421, so clients may time out. PART and WHO are also missing; NOTICE is optional.
+
+Smaller
+
+20. No SO_REUSEADDR, so a quick restart may fail to bind (not confirmed).
+21. Port "" and 0 still accepted. Empty password not rejected.
+22. ~Server closes _poll[0] (= _servFd) then close(_servFd) again: double close. Start loop at 1.
+23. POLLERR/POLLNVAL aren't handled in main.cpp.
+24. Line length is capped only for PRIVMSG; USER length is unbounded, so other relayed lines can exceed 512 bytes.
+25. MODE replies echo the typed case; bob,bob delivers twice.

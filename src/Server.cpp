@@ -172,11 +172,13 @@ void Server::recvMsg(int i)
 		{
 			broadcastToPeers(*it->second, ":" + it->second->getPrefix() + " QUIT :Connection closed");
 			disconnectClient(*it->second);
+			std::memset(_sBuff[i], 0, MAX_BUFF * 2);
 		}
 		else
 		{
 			close(fd);
 			pollFds(-1, i, 0, 0);
+			std::memset(_sBuff[i], 0, MAX_BUFF * 2);
 		}
 		return;
 	}

@@ -1,6 +1,6 @@
 #include "Client.hpp"
 
-Client::Client(int fd) : _fd(fd), _registered(false), _passGiven(false), _passOk(false)
+Client::Client(int fd) : _fd(fd), _registered(false), _passGiven(false), _passOk(false), _closing(false)
 {
 
 }
@@ -13,9 +13,11 @@ Client::Client(Client const& other)
 	this->_hostname = other._hostname;
 	this->_realname = other._realname;
 	this->_channels = other._channels;
+	this->_outBuf = other._outBuf;
 	this->_registered = other._registered;
 	this->_passGiven = other._passGiven;
 	this->_passOk = other._passOk;
+	this->_closing = other._closing;
 }
 
 Client& Client::operator=(Client const& rhs)
@@ -28,9 +30,11 @@ Client& Client::operator=(Client const& rhs)
 		this->_hostname = rhs._hostname;
 		this->_realname = rhs._realname;
 		this->_channels = rhs._channels;
+		this->_outBuf = rhs._outBuf;
 		this->_registered = rhs._registered;
 		this->_passGiven = rhs._passGiven;
 		this->_passOk = rhs._passOk;
+		this->_closing = rhs._closing;
 	}
 	return *this;
 }
@@ -142,4 +146,24 @@ void Client::removeChannel(Channel* channel)
 const std::vector<Channel*>& Client::getChannels() const
 {
 	return _channels;
+}
+
+std::string& Client::getOutBuf()
+{
+	return _outBuf;
+}
+
+void Client::clearChannels()
+{
+	_channels.clear();
+}
+
+bool Client::isClosing() const
+{
+	return _closing;
+}
+
+void Client::setClosing()
+{
+	_closing = true;
 }

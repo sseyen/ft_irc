@@ -45,16 +45,16 @@ private:
 	Server& operator=(Server const& rhs);
 
 	// Command dispatch (Registration.cpp)
-	void			handleBuffer(int fd, const std::string& buf);	// one or more \r\n-terminated lines as received from fd
+	void			handleBuffer(int fd, const std::string& buf);
 	void			execCommand(Client& client, const Command& cmd);
 
 	// Clients (Registration.cpp)
 	Client*			getClient(int fd);
 	Client*			findClientByNick(const std::string& nick);
-	void			disconnectClient(Client& client);
+	void			disconnectClient(Client& client, bool flush = false);
 
 	// Replies (Registration.cpp)
-	void			sendRaw(Client& client, const std::string& msg);
+	void			queueReply(Client& client, const std::string& msg);
 	void			sendReply(Client& client, const std::string& code, const std::string& params);
 
 	// Registration commands (Registration.cpp)
@@ -62,6 +62,7 @@ private:
 	void			cmdNick(Client& client, const Command& cmd);
 	void			cmdUser(Client& client, const Command& cmd);
 	void			cmdCap(Client& client, const Command& cmd);
+	void			cmdPing(Client& client, const Command& cmd);
 	void			cmdQuit(Client& client, const Command& cmd);
 	void			cmdMode(Client& client, const Command& cmd);
 	void			modeOperator(Client& client, Channel* channel, const Command& cmd, size_t& arg, bool sign);
@@ -105,7 +106,10 @@ public:
 	int				findFreeInd();
 	void			pollFds(int fd, int index, int events, int revents);
 	bool			cnctClient();
+	void			dropClient(int i);
 	void			recvMsg(int i);
+	void			sendMsg(int i);
+	int				findPollIndex(int fd);
 	void			errHandl(std::string msg);
 
 	// Channel registry

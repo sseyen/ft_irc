@@ -8,7 +8,7 @@ Buffer handling and I/O
 5. sendRaw calls send() directly, with no output buffer or POLLOUT. A partial send or EAGAIN loses data, and the subject requires I/O through poll.
 6. recv returning -1 always counts as a disconnect, including EAGAIN/EINTR. (db8e7e7 only added an error log.)
 7. The stale-data path: a connection that sends a partial line and leaves before any full command takes the else branch, which doesn't clear _sBuff[i]. The next client in that slot inherits the data.
-8. Over-long lines are dropped silently; should send 417.
+x8. Over-long lines are dropped silently; should send 417.
 9. Embedded NUL bytes truncate the buffer, because it's handled as a C string.
 
 MODE (src/Mode.cpp)
@@ -24,11 +24,11 @@ MODE (src/Mode.cpp)
 
 Missing commands
 
-19. PING/PONG returns 421, so clients may time out. PART and WHO are also missing; NOTICE is optional.
+x19. PING/PONG returns 421, so clients may time out. PART and WHO are also missing; NOTICE is optional.
 
 Smaller
 
 21. Port "" and 0 still accepted. Empty password not rejected.
 22. ~Server closes _poll[0] (= _servFd) then close(_servFd) again: double close. Start loop at 1.
-24. Line length is capped only for PRIVMSG; USER length is unbounded, so other relayed lines can exceed 512 bytes.
+x24. Line length is capped only for PRIVMSG; USER length is unbounded, so other relayed lines can exceed 512 bytes.
 25. MODE replies echo the typed case; bob,bob delivers twice.

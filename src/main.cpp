@@ -77,17 +77,26 @@ int main(int argc, char **argv)
 			{
 				// Socket accepted to the server
         		if (serv.cnctClient())
-					std::cout << "Deus Vult! (socket accepted)\n";
+					std::cout << "Socket accepted\n";
 			}
-			// Check all connectioins
+			// Check all connections
 			for(int i = 1; i < MAX_FDS; i++)
 			{
-				// Skip invalid fds
-				if (serv_poll[i].fd == -1)
+				short revents = serv_poll[i].revents;
+				// Socket error / invalid fd: nothing to read, drop it
+				if (revents & (POLLERR | POLLNVAL))
+				{
+					serv.dropClient(i);
 					continue;
-				// Incoming data received or hangup
-				if (serv_poll[i].revents & (POLLIN | POLLHUP))
+				}
+				// Incoming data or hangup (recv() then returns 0 -> dropClient)
+				if (revents & (POLLIN | POLLHUP))
 					serv.recvMsg(i);
+				if (serv_poll[i].fd == -1)	// recvMsg disconnected the client
+					continue;
+				// Socket writable: flush queued replies
+				if (revents & POLLOUT)
+					serv.sendMsg(i);
 			}
 		}
 	}

@@ -4,8 +4,7 @@
 
 static std::string privmsgLine(const Client& sender, const std::string& target, const std::string& text)
 {
-	return (":" + sender.getPrefix() + " PRIVMSG " + target + " :" + text)
-		.substr(0, Command::MAX_LINE_SIZE);
+	return ":" + sender.getPrefix() + " PRIVMSG " + target + " :" + text;
 }
 
 void Server::sendPrivmsg(Client& client, const std::string& target, const std::string& text)
@@ -23,7 +22,7 @@ void Server::sendPrivmsg(Client& client, const std::string& target, const std::s
 	Client* recipient = findClientByNick(target);
 	if (!recipient || !recipient->isRegistered())
 		return sendReply(client, ERR_NOSUCHNICK, target + " :No such nick/channel");
-	sendRaw(*recipient, privmsgLine(client, recipient->getNickname(), text));
+	queueReply(*recipient, privmsgLine(client, recipient->getNickname(), text));
 }
 
 // PRIVMSG <target>{,<target>} :<text>

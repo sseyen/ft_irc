@@ -15,10 +15,12 @@ private:
 	std::string _realname;
 
 	std::vector<Channel*> _channels;
+	std::string _outBuf;
 
 	bool _registered;
 	bool _passGiven;
 	bool _passOk;
+	bool _closing;
 
 	Client& operator=(Client const& rhs);
 	Client(Client const& other);
@@ -44,10 +46,15 @@ public:
 	bool isPassGiven() const;
 	bool isPassOk() const;
 	bool isRegistered() const;
+	bool isClosing() const;
+	void setClosing();
 
 	void addChannel(Channel* channel);
 	void removeChannel(Channel* channel);
 	const std::vector<Channel*>& getChannels() const;
+	void clearChannels();
+
+	std::string& getOutBuf();
 
 };
 

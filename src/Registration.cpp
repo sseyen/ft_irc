@@ -6,6 +6,7 @@
 #include <cctype>
 
 static const size_t NICK_MAX_LEN = 9;
+static const size_t USER_MAX_LEN = 10;
 
 //CLIENTS/////////////////////////////////////////////////////
 
@@ -32,20 +33,21 @@ Client* Server::findClientByNick(const std::string& nick)
 	return NULL;
 }
 
-// Closes the socket, frees its poll slot and deletes the Client.
-// client is dangling afterwards: callers must not touch it again.
-void Server::disconnectClient(Client& client)
+void Server::disconnectClient(Client& client, bool flush)
 {
 	removeClientFromChannels(&client);
 	int fd = client.getFd();
-	for (int i = 1; i < MAX_FDS; ++i)
+	int i = findPollIndex(fd);
+	if (flush && !client.getOutBuf().empty() && i != -1)
 	{
-		if (_poll[i].fd == fd)
-		{
-			pollFds(-1, i, 0, 0);
-			std::memset(_sBuff[i], 0, MAX_BUFF * 2);
-			break;
-		}
+		client.setClosing();
+		_poll[i].events |= POLLOUT;
+		return;
+	}
+	if (i != -1)
+	{
+		pollFds(-1, i, 0, 0);
+		std::memset(_sBuff[i], 0, MAX_BUFF * 2);
 	}
 	close(fd);
 	_clients.erase(fd);
@@ -54,21 +56,21 @@ void Server::disconnectClient(Client& client)
 
 //OUTPUT//////////////////////////////////////////////////////
 
-void Server::sendRaw(Client& client, const std::string& msg)
+void Server::queueReply(Client& client, const std::string& msg)
 {
-	std::string line = msg + "\r\n";
-	if (send(client.getFd(), line.c_str(), line.size(), 0) == -1)
-		std::cerr << "Error using send\n";
+	client.getOutBuf() += msg.substr(0, Command::MAX_LINE_SIZE) + "\r\n";
+	int i = findPollIndex(client.getFd());
+	if (i != -1)
+		_poll[i].events |= POLLOUT;
 }
 
 // :<server> <code> <nick|*> <params>
 void Server::sendReply(Client& client, const std::string& code, const std::string& params)
 {
 	const std::string& nick = client.getNickname();
-	sendRaw(client, std::string(":") + SERVER_NAME + " " + code + " "
+	queueReply(client, std::string(":") + SERVER_NAME + " " + code + " "
 		+ (nick.empty() ? "*" : nick) + " " + params);
 }
-
 
 //COMMANDS HELPERS/////////////////////////////////////////////
 
@@ -94,13 +96,19 @@ static bool isValidNick(const std::string& nick)
 }
 //COMMANDS////////////////////////////////////////////////////
 
+void Server::cmdPing(Client& client, const Command& cmd)
+{
+	(void)cmd;
+	queueReply(client, ":" + client.getPrefix() + " PONG :" + SERVER_NAME);
+}
+
 // QUIT [:<reason>]
 void Server::cmdQuit(Client& client, const Command& cmd)
 {
 	std::string reason = cmd.getParamCount() ? cmd.getParam(0) : "Client Quit";
 	broadcastToPeers(client, ":" + client.getPrefix() + " QUIT :Quit: " + reason);
-	sendRaw(client, "ERROR :Closing Link: (Quit: " + reason + ")");
-	disconnectClient(client);
+	queueReply(client, "ERROR :Closing Link: (Quit: " + reason + ")");
+	disconnectClient(client, true);
 }
 
 // PASS <password>
@@ -110,7 +118,6 @@ void Server::cmdPass(Client& client, const Command& cmd)
 		return sendReply(client, ERR_ALREADYREGISTERED, ":You may not reregister");
 	if (cmd.getParamCount() < 1)
 		return sendReply(client, ERR_NEEDMOREPARAMS, "PASS :Not enough parameters");
-	// A wrong password is only reported in tryRegister, once NICK and USER are in
 	client.setPassOk(cmd.getParam(0) == _pswd);
 	tryRegister(client);
 }
@@ -136,7 +143,7 @@ void Server::cmdNick(Client& client, const Command& cmd)
 		std::string msg = ":" + client.getPrefix() + " NICK :" + nick;
 		client.setNickname(nick);
 		broadcastToPeers(client, msg);
-		return sendRaw(client, msg);
+		return queueReply(client, msg);
 	}
 	client.setNickname(nick);
 	tryRegister(client);
@@ -151,7 +158,7 @@ void Server::cmdUser(Client& client, const Command& cmd)
 	if (cmd.getParamCount() < 4 || cmd.getParam(0).empty())
 		return sendReply(client, ERR_NEEDMOREPARAMS, "USER :Not enough parameters");
 
-	client.setUsername(cmd.getParam(0));
+	client.setUsername(cmd.getParam(0).substr(0, USER_MAX_LEN));
 	client.setRealname(cmd.getParam(3));
 	tryRegister(client);
 }
@@ -159,7 +166,7 @@ void Server::cmdUser(Client& client, const Command& cmd)
 void Server::cmdCap(Client& client, const Command& cmd)
 {
 	if (cmd.getParam(0) == "LS")
-		sendRaw(client, std::string(":") + SERVER_NAME + " CAP * LS :");
+		queueReply(client, std::string(":") + SERVER_NAME + " CAP * LS :");
 }
 static bool allowedBeforeRegistration(const std::string& name)
 {
@@ -183,6 +190,7 @@ void Server::execCommand(Client& client, const Command& cmd)
 		handlers["KICK"] = &Server::cmdKick;
 		handlers["INVITE"] = &Server::cmdInvite;
 		handlers["TOPIC"] = &Server::cmdTopic;
+		handlers["PING"] = &Server::cmdPing;
 	}
 
 	const std::string& name = cmd.getCommand();
@@ -192,7 +200,6 @@ void Server::execCommand(Client& client, const Command& cmd)
 	std::map<std::string, CmdHandler>::iterator it = handlers.find(name);
 	if (it == handlers.end())
 		return sendReply(client, ERR_UNKNOWNCOMMAND, cmd.getRawCommand() + " :Unknown command");
-	// handler may disconnect (and delete) client: nothing may follow this call
 	(this->*(it->second))(client, cmd);
 }
 
@@ -206,8 +213,8 @@ void Server::tryRegister(Client& client)
 	if (!client.isPassOk())
 	{
 		sendReply(client, ERR_PASSWDMISMATCH, ":Password incorrect");
-		sendRaw(client, "ERROR :Closing Link: (Password incorrect)");
-		return disconnectClient(client);
+		queueReply(client, "ERROR :Closing Link: (Password incorrect)");
+		return disconnectClient(client, true);
 	}
 
 	client.setRegistered();
@@ -217,21 +224,9 @@ void Server::tryRegister(Client& client)
 	sendReply(client, RPL_YOURHOST, std::string(":Your host is ") + SERVER_NAME
 		+ ", running version " + SERVER_VERSION);
 	sendReply(client, RPL_CREATED, std::string(":This server was created today"));
-	sendReply(client, RPL_MYINFO, std::string(SERVER_NAME) + " " + SERVER_VERSION + " io itkol kol");
+	sendReply(client, RPL_MYINFO, std::string(SERVER_NAME) + " " + SERVER_VERSION + " o itkol kol");
 }
 
-
-// void Server::handleLine(int fd, const std::string& line)
-// {
-// 	Command cmd;
-//
-// 	if (!cmd.parse(line))
-// 		return ;
-// 	execCommand(*getClient(fd), cmd);
-// }
-
-
-// buf: recvMsg's buffer, one or more \r\n-terminated lines
 void Server::handleBuffer(int fd, const std::string& buf)
 {
 	size_t start = 0;
@@ -244,11 +239,18 @@ void Server::handleBuffer(int fd, const std::string& buf)
 		if (!line.empty() && line[line.size() - 1] == '\r')
 			line.erase(line.size() - 1);
 
+		if (line.size() > Command::MAX_LINE_SIZE)
+		{
+			sendReply(*getClient(fd), ERR_INPUTTOOLONG, ":Input line was too long");
+			continue;
+		}
+
 		Command cmd;
 		if (!cmd.parse(line))
 			continue;
-		execCommand(*getClient(fd), cmd);
-		if (_clients.find(fd) == _clients.end())	// QUIT or failed registration closed it
+		Client* client = getClient(fd);
+		execCommand(*client, cmd);
+		if (client->isClosing())
 			return;
 	}
 }

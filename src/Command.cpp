@@ -1,5 +1,4 @@
 #include "Command.hpp"
-#include <iostream>
 
 Command::Command()
 {
@@ -24,9 +23,6 @@ static std::string nextWord(const std::string& s, size_t& i)
 
 bool Command::parse(const std::string& rawLine)
 {
-	if (rawLine.size() > MAX_LINE_SIZE)
-		return std::cerr << "line over byte limit long\n", false;
-
 	std::string line = rawLine;
     size_t i = 0;
 

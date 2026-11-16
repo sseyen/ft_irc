@@ -147,6 +147,22 @@ bool Server::cnctClient()
 	return true;
 }
 
+void Server::dropClient(int i)
+{
+	int fd = _poll[i].fd;
+	std::cout << "Socket " << fd << ": disconnected from the server\n";
+	std::map<int, Client*>::iterator it = _clients.find(fd);
+	if (it != _clients.end())
+	{
+		broadcastToPeers(*it->second, ":" + it->second->getPrefix() + " QUIT :Connection closed");
+		disconnectClient(*it->second);
+		return;
+	}
+	close(fd);
+	pollFds(-1, i, 0, 0);
+	std::memset(_sBuff[i], 0, MAX_BUFF * 2);
+}
+
 /*** @brief Receives data from the client socket into the buffer of MAX_BUFF. 
  * Makes it non-blocking. It returns -1 when there nothing to receive.
  * If 0 or minus value received disconnect user from server.
@@ -159,29 +175,11 @@ void Server::recvMsg(int i)
 	int fd = _poll[i].fd;
 	if(chk_r > 0)
 		_rBuff[chk_r] = '\0';
-	size_t sbuff_l = strlen(_sBuff[i]);
-	if(chk_r <= 0 || sbuff_l + chk_r >= sizeof(_sBuff[i]))
-	{
-		if(sbuff_l + chk_r >= sizeof(_sBuff[i]))
-			std::cerr << "Socket " << fd << ": message too long\n";
-		else if(chk_r < 0)
-			std::cerr << "Error receiving data\n";
-		std::cout << "Socket " << fd << ": disconnected from the server\n";
-		std::map<int, Client*>::iterator it = _clients.find(fd);
-		if (it != _clients.end())
-		{
-			broadcastToPeers(*it->second, ":" + it->second->getPrefix() + " QUIT :Connection closed");
-			disconnectClient(*it->second);
-			std::memset(_sBuff[i], 0, MAX_BUFF * 2);
-		}
-		else
-		{
-			close(fd);
-			pollFds(-1, i, 0, 0);
-			std::memset(_sBuff[i], 0, MAX_BUFF * 2);
-		}
+	if(chk_r <= 0)
+		return dropClient(i);
+	std::map<int, Client*>::iterator cl = _clients.find(fd);
+	if (cl != _clients.end() && cl->second->isClosing())
 		return;
-	}
 	if(chk_r >= 2 && _rBuff[chk_r - 1] == '\n' && _rBuff[chk_r - 2] == '\r')
 	{
 		std::strcat(_sBuff[i], _rBuff);
@@ -192,6 +190,38 @@ void Server::recvMsg(int i)
 	}
 	else
 		std::strcat(_sBuff[i], _rBuff);
+}
+
+void Server::sendMsg(int i)
+{
+	std::map<int, Client*>::iterator it = _clients.find(_poll[i].fd);
+	if (it == _clients.end())
+	{
+		_poll[i].events &= ~POLLOUT;
+		return;
+	}
+	std::string& out = it->second->getOutBuf();
+	if (!out.empty())
+	{
+		ssize_t sent = send(_poll[i].fd, out.c_str(), out.size(), 0);
+		if (sent > 0)
+			out.erase(0, sent);
+	}
+	if (!out.empty())
+		return;
+	if (it->second->isClosing())
+		return disconnectClient(*it->second);
+	_poll[i].events &= ~POLLOUT;
+}
+
+int Server::findPollIndex(int fd)
+{
+	for (int i = 1; i < MAX_FDS; i++)
+	{
+		if (_poll[i].fd == fd)
+			return i;
+	}
+	return -1;
 }
 
 void Server::errHandl(std::string msg)
@@ -255,6 +285,8 @@ void Server::removeClientFromChannels(Client* client) {
 			empty.push_back(it->first);
 	}
 
+	client->clearChannels();
+
 	for (size_t i = 0; i < empty.size(); i++)
 		removeChannel(empty[i]);
 }
@@ -271,7 +303,7 @@ void Server::broadcast(Channel& channel, const std::string& msg, Client* except)
 	for (size_t i = 0; i < members.size(); i++)
 	{
 		if (members[i] != except)
-			sendRaw(*members[i], msg);
+			queueReply(*members[i], msg);
 	}
 }
 
@@ -288,6 +320,6 @@ void Server::broadcastToPeers(Client& client, const std::string& msg)
 	}
 	peers.erase(&client);
 	for (std::set<Client*>::iterator it = peers.begin(); it != peers.end(); ++it)
-		sendRaw(**it, msg);
+		queueReply(**it, msg);
 }
 

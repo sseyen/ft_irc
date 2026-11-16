@@ -32,5 +32,5 @@ void Server::cmdInvite(Client& client, const Command& cmd)
 
 	channel->addInvite(target);
 	sendReply(client, RPL_INVITING, target->getNickname() + " " + chan);
-	sendRaw(*target, ":" + client.getPrefix() + " INVITE " + target->getNickname() + " " + chan);
+	queueReply(*target, ":" + client.getPrefix() + " INVITE " + target->getNickname() + " " + chan);
 }

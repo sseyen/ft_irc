@@ -68,10 +68,26 @@ bool Server::modeOperator(Client& client, Channel* channel, const Command& cmd, 
 }
 
 
+// MODE <nick> [<modes>]: no user modes are supported
+void Server::modeUser(Client& client, const Command& cmd)
+{
+	const std::string& nick = cmd.getParam(0);
+	Client* target = findClientByNick(nick);
+	if (!target)
+		return sendReply(client, ERR_NOSUCHNICK, nick + " :No such nick/channel");
+	if (target != &client)
+		return sendReply(client, ERR_USERSDONTMATCH, ":Cant change mode for other users");
+	if (cmd.getParamCount() == 1)
+		return sendReply(client, RPL_UMODEIS, "+");
+	sendReply(client, ERR_UMODEUNKNOWNFLAG, ":Unknown MODE flag");
+}
+
 void Server::cmdMode(Client& client, const Command& cmd) {
-	if (cmd.getParamCount() < 1)
+	if (cmd.getParamCount() < 1 || cmd.getParam(0).empty())
 		return sendReply(client, ERR_NEEDMOREPARAMS, "MODE :Not enough parameters");
 	std::string name = cmd.getParam(0);
+	if (name[0] != '#' && name[0] != '&')
+		return modeUser(client, cmd);
 	Channel* channel = findChannel(name);
 	if (!channel)
 		return sendReply(client, ERR_NOSUCHCHANNEL, name + " :No such channel");

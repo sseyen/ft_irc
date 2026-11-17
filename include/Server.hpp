@@ -65,6 +65,7 @@ private:
 	void			cmdPing(Client& client, const Command& cmd);
 	void			cmdQuit(Client& client, const Command& cmd);
 	void			cmdMode(Client& client, const Command& cmd);
+	void			modeUser(Client& client, const Command& cmd);
 	bool			modeOperator(Client& client, Channel* channel, const Command& cmd, size_t& arg, bool sign, std::string& params);
 	void			tryRegister(Client& client);
 

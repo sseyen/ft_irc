@@ -15,7 +15,7 @@ MODE (src/Mode.cpp)
 
 10. Changes are never broadcast, so other members never see +o, +i and so on.
 11. MODE #c always answers +, ignoring the actual modes and params.
-12. User-mode requests like MODE nick +i, which clients send on connect, get 403. Should be 221/501/502; those constants already exist.
+x12. User-mode requests like MODE nick +i, which clients send on connect, get 403. Should be 221/501/502; those constants already exist.
 13. Missing params for +k, +l, +o are ignored silently; should send 461.
 14. +l uses atoi: 5abc becomes 5, and overflow is undefined. Invalid values get no error.
 15. MODE #c b gets 472, though clients query it on join. Needs an empty ban list reply (368, not defined yet).

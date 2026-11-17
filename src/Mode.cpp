@@ -4,13 +4,30 @@
 #include <sstream>
 #include <cctype>
 
-static bool modeKey(Channel* channel, const Command& cmd, size_t& arg, bool sign, std::string& params) {
+// Key: 1-23 printable chars, no spaces and no ',' (JOIN splits keys on ',')
+static bool isValidKey(const std::string& key) {
+	if (key.empty() || key.size() > 23)
+		return false;
+	for (size_t i = 0; i < key.size(); i++) {
+		unsigned char c = key[i];
+		if (c <= ' ' || c == ',' || c == 127)
+			return false;
+	}
+	return true;
+}
+
+bool Server::modeKey(Client& client, Channel* channel, const Command& cmd, size_t& arg, bool sign, std::string& params) {
 	if (sign) {
 		if (arg >= cmd.getParamCount())
 			return false;
-		channel->setKey(cmd.getParam(arg));
-		params += " " + cmd.getParam(arg);
+		const std::string& key = cmd.getParam(arg);
 		arg++;
+		if (!isValidKey(key)) {
+			sendReply(client, ERR_INVALIDKEY, channel->getName() + " :Key is not well-formed");
+			return false;
+		}
+		channel->setKey(key);
+		params += " " + key;
 	}
 	else {
 		// -k <key>: clients send the key back, consume it so later modes keep their args
@@ -170,7 +187,7 @@ void Server::cmdMode(Client& client, const Command& cmd) {
 			applied = true;
 		}
 		else if (c == 'k')
-			applied = modeKey(channel, cmd, arg, sign, params);
+			applied = modeKey(client, channel, cmd, arg, sign, params);
 		else if (c == 'l')
 			applied = modeLimit(client, channel, cmd, arg, sign, params);
 		else if (c == 'o')

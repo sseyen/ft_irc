@@ -12,8 +12,13 @@ static bool modeKey(Channel* channel, const Command& cmd, size_t& arg, bool sign
 		params += " " + cmd.getParam(arg);
 		arg++;
 	}
-	else
+	else {
+		// -k <key>: clients send the key back, consume it so later modes keep their args
+		if (arg < cmd.getParamCount())
+			arg++;
 		channel->setKey("");
+		params += " *";
+	}
 	return true;
 }
 

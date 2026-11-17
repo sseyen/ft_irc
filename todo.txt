@@ -19,7 +19,7 @@ x12. User-mode requests like MODE nick +i, which clients send on connect, get 4
 x13. Missing params for +k, +l, +o are ignored silently; should send 461.
 x14. +l uses atoi: 5abc becomes 5, and overflow is undefined. Invalid values get no error.
 x15. MODE #c b gets 472, though clients query it on join. Needs an empty ban list reply (368, not defined yet).
-16. -k takes no argument, so in -k key +l 5 the +l consumes key and is dropped.
+x16. -k takes no argument, so in -k key +l 5 the +l consumes key and is dropped.
 17. +k never validates the key; 525 is unused.
 
 Missing commands

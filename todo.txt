@@ -5,15 +5,15 @@ Buffer handling and I/O
 
 3. Lines only run if the chunk ends in \r\n. In A\r\nB, A waits until a later chunk happens to end cleanly.
 4. Bare \n is never processed: handleBuffer accepts it but the recvMsg check blocks it, so plain nc doesn't work.
-5. sendRaw calls send() directly, with no output buffer or POLLOUT. A partial send or EAGAIN loses data, and the subject requires I/O through poll.
-6. recv returning -1 always counts as a disconnect, including EAGAIN/EINTR. (db8e7e7 only added an error log.)
-7. The stale-data path: a connection that sends a partial line and leaves before any full command takes the else branch, which doesn't clear _sBuff[i]. The next client in that slot inherits the data.
+x5. sendRaw calls send() directly, with no output buffer or POLLOUT. A partial send or EAGAIN loses data, and the subject requires I/O through poll.
+6. recv returning -1 always counts as a disconnect, including EAGAIN/EINTR. (db8e7e7 only added an error log.) WON'T FIX: subject forbids relying on errno after recv/send.
+x7. The stale-data path: a connection that sends a partial line and leaves before any full command takes the else branch, which doesn't clear _sBuff[i]. The next client in that slot inherits the data.
 x8. Over-long lines are dropped silently; should send 417.
 9. Embedded NUL bytes truncate the buffer, because it's handled as a C string.
 
 MODE (src/Mode.cpp)
 
-10. Changes are never broadcast, so other members never see +o, +i and so on.
+x10. Changes are never broadcast, so other members never see +o, +i and so on.
 11. MODE #c always answers +, ignoring the actual modes and params.
 x12. User-mode requests like MODE nick +i, which clients send on connect, get 403. Should be 221/501/502; those constants already exist.
 13. Missing params for +k, +l, +o are ignored silently; should send 461.

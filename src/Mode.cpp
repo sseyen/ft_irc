@@ -35,6 +35,28 @@ static bool modeLimit(Channel* channel, const Command& cmd, size_t& arg, bool si
 }
 
 // Appends mode char c to changes, adding the sign only when it differs from the last one
+// Current channel modes for RPL_CHANNELMODEIS, e.g. "+itkl secret 5"
+static std::string channelModes(Channel* channel, bool showKey) {
+	std::string modes = "+";
+	std::string params;
+	if (channel->isInviteOnly())
+		modes += 'i';
+	if (channel->isTopicRestricted())
+		modes += 't';
+	if (channel->isKeyProtected()) {
+		modes += 'k';
+		if (showKey)
+			params += " " + channel->getKey();
+	}
+	if (channel->isLimited()) {
+		std::ostringstream ss;
+		ss << channel->getLimit();
+		modes += 'l';
+		params += " " + ss.str();
+	}
+	return modes + params;
+}
+
 static void addChange(std::string& changes, char& lastSign, bool sign, char c) {
 	char s = sign ? '+' : '-';
 	if (s != lastSign) {
@@ -92,7 +114,8 @@ void Server::cmdMode(Client& client, const Command& cmd) {
 	if (!channel)
 		return sendReply(client, ERR_NOSUCHCHANNEL, name + " :No such channel");
 	if (cmd.getParamCount() == 1)
-		return sendReply(client, RPL_CHANNELMODEIS, name + " +");
+		return sendReply(client, RPL_CHANNELMODEIS, channel->getName() + " "
+			+ channelModes(channel, channel->hasClient(&client)));
 	// Ban list query: bans are not supported, so the list is always empty
 	if (cmd.getParamCount() == 2 && (cmd.getParam(1) == "b" || cmd.getParam(1) == "+b"))
 		return sendReply(client, RPL_ENDOFBANLIST, name + " :End of channel ban list");

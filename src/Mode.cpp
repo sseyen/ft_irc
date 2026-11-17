@@ -2,6 +2,7 @@
 #include "Channel.hpp"
 #include "Replies.hpp"
 #include <sstream>
+#include <cctype>
 
 static bool modeKey(Channel* channel, const Command& cmd, size_t& arg, bool sign, std::string& params) {
 	if (sign) {
@@ -16,14 +17,29 @@ static bool modeKey(Channel* channel, const Command& cmd, size_t& arg, bool sign
 	return true;
 }
 
-static bool modeLimit(Channel* channel, const Command& cmd, size_t& arg, bool sign, std::string& params) {
+// Limit must be 1-5 digits and > 0, so it never overflows
+static bool parseLimit(const std::string& str, size_t& limit) {
+	if (str.empty() || str.size() > 5)
+		return false;
+	for (size_t i = 0; i < str.size(); i++)
+		if (!std::isdigit(static_cast<unsigned char>(str[i])))
+			return false;
+	std::istringstream ss(str);
+	ss >> limit;
+	return limit > 0;
+}
+
+bool Server::modeLimit(Client& client, Channel* channel, const Command& cmd, size_t& arg, bool sign, std::string& params) {
 	if (sign) {
 		if (arg >= cmd.getParamCount())
 			return false;
-		int limit = std::atoi(cmd.getParam(arg).c_str());
+		const std::string& value = cmd.getParam(arg);
 		arg++;
-		if (limit <= 0)
+		size_t limit = 0;
+		if (!parseLimit(value, limit)) {
+			sendReply(client, ERR_INVALIDMODEPARAM, channel->getName() + " l " + value + " :Invalid limit");
 			return false;
+		}
 		channel->setLimit(limit);
 		std::ostringstream ss;
 		ss << limit;
@@ -151,7 +167,7 @@ void Server::cmdMode(Client& client, const Command& cmd) {
 		else if (c == 'k')
 			applied = modeKey(channel, cmd, arg, sign, params);
 		else if (c == 'l')
-			applied = modeLimit(channel, cmd, arg, sign, params);
+			applied = modeLimit(client, channel, cmd, arg, sign, params);
 		else if (c == 'o')
 			applied = modeOperator(client, channel, cmd, arg, sign, params);
 		else

@@ -93,6 +93,9 @@ void Server::cmdMode(Client& client, const Command& cmd) {
 		return sendReply(client, ERR_NOSUCHCHANNEL, name + " :No such channel");
 	if (cmd.getParamCount() == 1)
 		return sendReply(client, RPL_CHANNELMODEIS, name + " +");
+	// Ban list query: bans are not supported, so the list is always empty
+	if (cmd.getParamCount() == 2 && (cmd.getParam(1) == "b" || cmd.getParam(1) == "+b"))
+		return sendReply(client, RPL_ENDOFBANLIST, name + " :End of channel ban list");
 	if (!(channel->isOperator(&client)))
 		return sendReply(client, ERR_CHANOPRIVSNEEDED, name + " :You're not channel operator");
 	const std::string& modes = cmd.getParam(1);

@@ -27,6 +27,7 @@
 #define RPL_UMODEIS				"221"	// <user modes>
 #define RPL_CHANNELMODEIS		"324"	// <channel> <modestring> <mode arguments>...
 #define RPL_CREATIONTIME		"329"	// <channel> <creation unix time>
+#define RPL_ENDOFBANLIST		"368"	// <channel> :End of channel ban list
 
 // WHO
 #define RPL_WHOREPLY			"352"	// <channel> <user> <host> <server> <nick> <flags> :<hopcount> <realname>   flags: H here, G away, @ op

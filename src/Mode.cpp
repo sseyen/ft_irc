@@ -134,7 +134,13 @@ void Server::cmdMode(Client& client, const Command& cmd) {
 			sign = c == '+';
 			continue;
 		}
-		else if (c == 'i') {
+		// o always needs a nick; k and l need a value only when set
+		bool needsArg = c == 'o' || (sign && (c == 'k' || c == 'l'));
+		if (needsArg && arg >= cmd.getParamCount()) {
+			sendReply(client, ERR_NEEDMOREPARAMS, "MODE :Not enough parameters");
+			continue;
+		}
+		if (c == 'i') {
 			channel->setInviteOnly(sign);
 			applied = true;
 		}

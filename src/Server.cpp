@@ -177,6 +177,11 @@ void Server::recvMsg(int i)
 		_rBuff[chk_r] = '\0';
 	if(chk_r <= 0)
 		return dropClient(i);
+	if(strlen(_sBuff[i]) + chk_r >= sizeof(_sBuff[i]))
+	{
+		std::cerr << "Socket " << fd << ": message too long\n";
+		return dropClient(i);
+	}
 	std::map<int, Client*>::iterator cl = _clients.find(fd);
 	if (cl != _clients.end() && cl->second->isClosing())
 		return;

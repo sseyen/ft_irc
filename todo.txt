@@ -9,7 +9,7 @@ x5. sendRaw calls send() directly, with no output buffer or POLLOUT. A partial s
 X6. recv returning -1 always counts as a disconnect, including EAGAIN/EINTR. (db8e7e7 only added an error log.) WON'T FIX: subject forbids relying on errno after recv/send.
 x7. The stale-data path: a connection that sends a partial line and leaves before any full command takes the else branch, which doesn't clear _sBuff[i]. The next client in that slot inherits the data.
 x8. Over-long lines are dropped silently; should send 417.
-9. Embedded NUL bytes truncate the buffer, because it's handled as a C string.
+X9. Embedded NUL bytes truncate the buffer, because it's handled as a C string.
 
 MODE (src/Mode.cpp)
 

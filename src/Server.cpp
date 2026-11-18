@@ -173,6 +173,11 @@ void Server::recvMsg(int i)
 	std::memset(_rBuff, 0, MAX_BUFF);
 	int chk_r = recv(_poll[i].fd, _rBuff, MAX_BUFF, 0);
 	int fd = _poll[i].fd;
+	if (std::memchr(_rBuff, '\0', chk_r) != NULL)
+	{
+    	std::cerr << "Socket " << fd << ": message malformed by null byte\n";
+    	return dropClient(i);
+	}	
 	if(chk_r > 0)
 		_rBuff[chk_r] = '\0';
 	if(chk_r <= 0)

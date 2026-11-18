@@ -4,7 +4,7 @@ import time
 s = socket.socket()
 s.connect(("localhost", 6667))
 
-s.sendall(b"PASS 11\r\nNICK Bob\r\nUSER bob 0 * :Bob")
+s.sendall(b"PASS 11\r\nNICK Bob\0\nUSER bob 0 * :Bob")
 time.sleep(1)
 
 # s.sendall(

@@ -4,9 +4,9 @@ Critical: server crash or memory corruption
 Buffer handling and I/O
 
 3. Lines only run if the chunk ends in \r\n. In A\r\nB, A waits until a later chunk happens to end cleanly.
-4. Bare \n is never processed: handleBuffer accepts it but the recvMsg check blocks it, so plain nc doesn't work.
+X4. Bare \n is never processed: handleBuffer accepts it but the recvMsg check blocks it, so plain nc doesn't work.
 x5. sendRaw calls send() directly, with no output buffer or POLLOUT. A partial send or EAGAIN loses data, and the subject requires I/O through poll.
-6. recv returning -1 always counts as a disconnect, including EAGAIN/EINTR. (db8e7e7 only added an error log.) WON'T FIX: subject forbids relying on errno after recv/send.
+X6. recv returning -1 always counts as a disconnect, including EAGAIN/EINTR. (db8e7e7 only added an error log.) WON'T FIX: subject forbids relying on errno after recv/send.
 x7. The stale-data path: a connection that sends a partial line and leaves before any full command takes the else branch, which doesn't clear _sBuff[i]. The next client in that slot inherits the data.
 x8. Over-long lines are dropped silently; should send 417.
 9. Embedded NUL bytes truncate the buffer, because it's handled as a C string.
@@ -28,7 +28,7 @@ x19. PING/PONG returns 421, so clients may time out. PART and WHO are also missi
 
 Smaller
 
-21. Port "" and 0 still accepted. Empty password not rejected.
-22. ~Server closes _poll[0] (= _servFd) then close(_servFd) again: double close. Start loop at 1.
+X21. Port "" and 0 still accepted. Empty password not rejected.
+X22. ~Server closes _poll[0] (= _servFd) then close(_servFd) again: double close. Start loop at 1.
 x24. Line length is capped only for PRIVMSG; USER length is unbounded, so other relayed lines can exceed 512 bytes.
 25. MODE replies echo the typed case; bob,bob delivers twice.

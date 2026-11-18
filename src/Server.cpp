@@ -62,7 +62,7 @@ Server::~Server()
 	for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 		delete it->second;
 
-	for (int i = 0; i < MAX_FDS; ++i)
+	for (int i = 1; i < MAX_FDS; ++i)
 		if (_poll[i].fd != -1)
 			close(_poll[i].fd);
 
@@ -185,16 +185,22 @@ void Server::recvMsg(int i)
 	std::map<int, Client*>::iterator cl = _clients.find(fd);
 	if (cl != _clients.end() && cl->second->isClosing())
 		return;
-	if(chk_r >= 2 && _rBuff[chk_r - 1] == '\n' && _rBuff[chk_r - 2] == '\r')
-	{
-		std::strcat(_sBuff[i], _rBuff);
-		std::cout << "Socket " << _poll[i].fd << ": ";
-		std::cout << _sBuff[i] << '\n';
-		handleBuffer(fd, std::string(_sBuff[i]));
-		std::memset(_sBuff[i], 0, MAX_BUFF * 2);
-	}
-	else
-		std::strcat(_sBuff[i], _rBuff);
+	std::strcat(_sBuff[i], _rBuff);
+
+    char *end = NULL;
+    char *ptr = _sBuff[i];
+    while ((ptr = std::strstr(ptr, "\r\n")) != NULL)
+    {
+        end = ptr + 2;
+        ptr += 2;
+    }
+    if (end == NULL)
+        return;
+    size_t compltlen = end - _sBuff[i];
+    std::string complete(_sBuff[i], compltlen);
+    std::memmove(_sBuff[i], end, strlen(end) + 1);
+    std::cout << "Socket " << fd << ": " << complete;
+    handleBuffer(fd, complete);
 }
 
 void Server::sendMsg(int i)

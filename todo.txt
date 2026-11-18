@@ -3,7 +3,7 @@ Critical: server crash or memory corruption
 
 Buffer handling and I/O
 
-3. Lines only run if the chunk ends in \r\n. In A\r\nB, A waits until a later chunk happens to end cleanly.
+X3. Lines only run if the chunk ends in \r\n. In A\r\nB, A waits until a later chunk happens to end cleanly.
 X4. Bare \n is never processed: handleBuffer accepts it but the recvMsg check blocks it, so plain nc doesn't work.
 x5. sendRaw calls send() directly, with no output buffer or POLLOUT. A partial send or EAGAIN loses data, and the subject requires I/O through poll.
 X6. recv returning -1 always counts as a disconnect, including EAGAIN/EINTR. (db8e7e7 only added an error log.) WON'T FIX: subject forbids relying on errno after recv/send.

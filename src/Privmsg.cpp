@@ -1,6 +1,7 @@
 #include "Server.hpp"
 #include "Channel.hpp"
 #include "Replies.hpp"
+#include <set>
 
 static std::string privmsgLine(const Client& sender, const std::string& target, const std::string& text)
 {
@@ -34,10 +35,12 @@ void Server::cmdPrivmsg(Client& client, const Command& cmd)
 		return sendReply(client, ERR_NOTEXTTOSEND, ":No text to send");
 
 	std::vector<std::string> targets = splitList(cmd.getParam(0));
+	std::set<std::string> seen;
 
 	for (size_t i = 0; i < targets.size(); ++i)
 	{
-		if (!targets[i].empty())
+		// insert().second is false for a duplicate (case-insensitive): bob,BOB delivers once
+		if (!targets[i].empty() && seen.insert(ircLower(targets[i])).second)
 			sendPrivmsg(client, targets[i], cmd.getParam(1));
 	}
 }

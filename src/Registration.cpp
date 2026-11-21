@@ -94,12 +94,14 @@ static bool isValidNick(const std::string& nick)
 	}
 	return true;
 }
+
 //COMMANDS////////////////////////////////////////////////////
 
 void Server::cmdPing(Client& client, const Command& cmd)
 {
-	(void)cmd;
-	queueReply(client, ":" + client.getPrefix() + " PONG :" + SERVER_NAME);
+	if (cmd.getParamCount() < 1 || cmd.getParam(0).empty())
+		return sendReply(client, ERR_NOORIGIN, ":No origin specified");
+	queueReply(client, std::string(":") + SERVER_NAME + " PONG " + SERVER_NAME + " :" + cmd.getParam(0));
 }
 
 // QUIT [:<reason>]

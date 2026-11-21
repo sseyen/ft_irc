@@ -38,7 +38,6 @@ void setupSignals() {
 	sigaction(SIGTERM, &sa, NULL);
 }
 
-/*** @brief Main function with the main loop.*/
 int main(int argc, char **argv)
 {	
 	std::cout << "   ____                            _     _   _  ___ _____   _   _                            _        _   \n";
@@ -57,48 +56,62 @@ int main(int argc, char **argv)
 	if(port_n == -1)
 		return 1;
 	setupSignals();
-	Server serv(port_n, argv[2]);
-	struct pollfd *serv_poll = serv.getPoll();
-	int ready;
-	while(running)
+	try
 	{
-		// Checks server until something happens
-		ready = poll(serv_poll, MAX_FDS, -1);
-		if(ready == -1)
+		Server serv(port_n, argv[2]);
+		struct pollfd *serv_poll = serv.getPoll();
+		int ready;
+		while(running)
 		{
-			if(errno == EINTR)
+			// Checks server until something happens
+			ready = poll(serv_poll, MAX_FDS, -1);
+			if(ready == -1)
+			{
+				if(errno == EINTR)
+					continue;
+				std::cerr << "Error: " << std::strerror(errno) << '\n';
+				break;
+			}
+			if(ready <= 0)
 				continue;
-			std::cerr << "Error: " << std::strerror(errno) << '\n';
-	        break;
-		}
-		if(ready > 0)
-		{
-			if(serv_poll[0].revents & POLLIN)
+			try
 			{
-				// Socket accepted to the server
-        		if (serv.cnctClient())
-					std::cout << "Socket accepted\n";
-			}
-			// Check all connections
-			for(int i = 1; i < MAX_FDS; i++)
-			{
-				short revents = serv_poll[i].revents;
-				// Socket error / invalid fd: nothing to read, drop it
-				if (revents & (POLLERR | POLLNVAL))
+				if(serv_poll[0].revents & POLLIN)
 				{
-					serv.dropClient(i);
-					continue;
+					// Socket accepted to the server
+					if (serv.cnctClient())
+						std::cout << "Socket accepted\n";
 				}
-				// Incoming data or hangup (recv() then returns 0 -> dropClient)
-				if (revents & (POLLIN | POLLHUP))
-					serv.recvMsg(i);
-				if (serv_poll[i].fd == -1)	// recvMsg disconnected the client
-					continue;
-				// Socket writable: flush queued replies
-				if (revents & POLLOUT)
-					serv.sendMsg(i);
+				// Check all connections
+				for(int i = 1; i < MAX_FDS; i++)
+				{
+					short revents = serv_poll[i].revents;
+					// Socket error / invalid fd: nothing to read, drop it
+					if (revents & (POLLERR | POLLNVAL))
+					{
+						serv.dropClient(i);
+						continue;
+					}
+					// Incoming data or hangup (recv() then returns 0 -> dropClient)
+					if (revents & (POLLIN | POLLHUP))
+						serv.recvMsg(i);
+					if (serv_poll[i].fd == -1)	// recvMsg disconnected the client
+						continue;
+					// Socket writable: flush queued replies
+					if (revents & POLLOUT)
+						serv.sendMsg(i);
+				}
+			}
+			catch (std::exception const& e)
+			{
+				std::cerr << "Error: " << e.what() << '\n';
 			}
 		}
+	}
+	catch (std::exception const& e)
+	{
+		std::cerr << e.what();
+		return 1;
 	}
 	return 0;
 }

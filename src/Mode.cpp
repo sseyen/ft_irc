@@ -139,6 +139,9 @@ void Server::modeUser(Client& client, const Command& cmd)
 		return sendReply(client, ERR_USERSDONTMATCH, ":Cant change mode for other users");
 	if (cmd.getParamCount() == 1)
 		return sendReply(client, RPL_UMODEIS, "+");
+	// +i/-i (sent by clients on connect) is ignored silently
+	if (cmd.getParam(1).find_first_not_of("+-i") == std::string::npos)
+		return;
 	sendReply(client, ERR_UMODEUNKNOWNFLAG, ":Unknown MODE flag");
 }
 

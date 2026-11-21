@@ -242,8 +242,7 @@ int Server::findPollIndex(int fd)
 
 void Server::errHandl(std::string msg)
 {
-	std::cerr << msg;
-	_exit(1);
+	throw std::runtime_error(msg);
 }
 
 /* ************************************************************************** */

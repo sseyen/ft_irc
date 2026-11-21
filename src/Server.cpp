@@ -114,7 +114,7 @@ void Server::pollFds(int fd, int index, int events, int revents)
 	_poll[index].revents = revents;
 }
 
-/*** @brief Here listening socket accepts newly dedicated socket. 
+/*** @brief Here listening socket accepts newly dedicated socket.
  * Makes it non-blocking. It returns -1 when there nothing to receive.
  * Finds and registers client socket on a free space.
 */
@@ -163,7 +163,7 @@ void Server::dropClient(int i)
 	std::memset(_sBuff[i], 0, MAX_BUFF * 2);
 }
 
-/*** @brief Receives data from the client socket into the buffer of MAX_BUFF. 
+/*** @brief Receives data from the client socket into the buffer of MAX_BUFF.
  * Makes it non-blocking. It returns -1 when there nothing to receive.
  * If 0 or minus value received disconnect user from server.
  * Writes out a message terminated with \r\n or adds to save buffer.
@@ -177,7 +177,7 @@ void Server::recvMsg(int i)
 	{
     	std::cerr << "Socket " << fd << ": message malformed by null byte\n";
     	return dropClient(i);
-	}	
+	}
 	if(chk_r > 0)
 		_rBuff[chk_r] = '\0';
 	if(chk_r <= 0)
@@ -211,11 +211,6 @@ void Server::recvMsg(int i)
 void Server::sendMsg(int i)
 {
 	std::map<int, Client*>::iterator it = _clients.find(_poll[i].fd);
-	if (it == _clients.end())
-	{
-		_poll[i].events &= ~POLLOUT;
-		return;
-	}
 	std::string& out = it->second->getOutBuf();
 	if (!out.empty())
 	{

@@ -13,9 +13,9 @@ int chckPort(char **argv) {
             return -1;
         }
 		i++;
-	} 
+	}
     int port_n = std::atoi(argv[1]);
-    if (port_n < 0 || port_n > 65535) 
+    if (port_n < 0 || port_n > 65535)
 	{
         std::cout << "Error: Wrong port number\n";
         return -1;
@@ -39,14 +39,14 @@ void setupSignals() {
 }
 
 int main(int argc, char **argv)
-{	
+{
 	std::cout << "   ____                            _     _   _  ___ _____   _   _                            _        _   \n";
 	std::cout << "  / ___|___  _ __  _ __   ___  ___| |_  | \\ | |/ _ \\_   _| | |_| |__  _   _   ___  ___   ___| | _____| |_ \n";
 	std::cout << " | |   / _ \\| '_ \\| '_ \\ / _ \\/ __| __| |  \\| | | | || |   | __| '_ \\| | | | / __|/ _ \\ / __| |/ / _ \\ __|\n";
 	std::cout << " | |__| (_) | | | | | | |  __/ (__| |_  | |\\  | |_| || |   | |_| | | | |_| | \\__ \\ (_) | (__|   <  __/ |_ \n";
 	std::cout << "  \\____\\___/|_| |_|_| |_|\\___|\\___|\\__| |_| \\_|\\___/ |_|    \\__|_| |_|\\__, | |___/\\___/ \\___|_|\\_\\___|\\__|\n";
 	std::cout << "                                                                      |___/                               \n";
-	
+
 	if(argc != 3)
 	{
 		std::cerr << "We accept thy 3 arguments here!\n";
@@ -72,39 +72,30 @@ int main(int argc, char **argv)
 				std::cerr << "Error: " << std::strerror(errno) << '\n';
 				break;
 			}
-			if(ready <= 0)
-				continue;
-			try
+			if(serv_poll[0].revents & POLLIN)
 			{
-				if(serv_poll[0].revents & POLLIN)
-				{
-					// Socket accepted to the server
-					if (serv.cnctClient())
-						std::cout << "Socket accepted\n";
-				}
-				// Check all connections
-				for(int i = 1; i < MAX_FDS; i++)
-				{
-					short revents = serv_poll[i].revents;
-					// Socket error / invalid fd: nothing to read, drop it
-					if (revents & (POLLERR | POLLNVAL))
-					{
-						serv.dropClient(i);
-						continue;
-					}
-					// Incoming data or hangup (recv() then returns 0 -> dropClient)
-					if (revents & (POLLIN | POLLHUP))
-						serv.recvMsg(i);
-					if (serv_poll[i].fd == -1)	// recvMsg disconnected the client
-						continue;
-					// Socket writable: flush queued replies
-					if (revents & POLLOUT)
-						serv.sendMsg(i);
-				}
+				// Socket accepted to the server
+				if (serv.cnctClient())
+					std::cout << "Socket accepted\n";
 			}
-			catch (std::exception const& e)
+			// Check all connections
+			for(int i = 1; i < MAX_FDS; i++)
 			{
-				std::cerr << "Error: " << e.what() << '\n';
+				short revents = serv_poll[i].revents;
+				// Socket error / invalid fd: nothing to read, drop it
+				if (revents & (POLLERR | POLLNVAL))
+				{
+					serv.dropClient(i);
+					continue;
+				}
+				// Incoming data or hangup (recv() then returns 0 -> dropClient)
+				if (revents & (POLLIN | POLLHUP))
+					serv.recvMsg(i);
+				if (serv_poll[i].fd == -1)	// recvMsg disconnected the client
+					continue;
+				// Socket writable: flush queued replies
+				if (revents & POLLOUT)
+					serv.sendMsg(i);
 			}
 		}
 	}
@@ -115,8 +106,3 @@ int main(int argc, char **argv)
 	}
 	return 0;
 }
- 
-   
-   
-   
-    

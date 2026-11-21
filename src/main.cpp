@@ -36,6 +36,10 @@ void setupSignals() {
 	sa.sa_flags = 0;
 	sigaction(SIGINT, &sa, NULL);
 	sigaction(SIGTERM, &sa, NULL);
+
+	// Writing to a closed socket must not kill the server: send() returns -1 instead
+	sa.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &sa, NULL);
 }
 
 int main(int argc, char **argv)

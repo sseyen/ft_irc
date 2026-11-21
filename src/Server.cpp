@@ -87,7 +87,8 @@ struct pollfd* Server::getPoll()
 /*                              Connections & I/O                             */
 /* ************************************************************************** */
 
-/*** @brief Changes properties of descriptor with file flag and sets it to non-blocking */
+/*** @brief Changes properties of descriptor with file flag and sets it to non-blocking
+*/
 bool Server::setNonBlocking(int fd)
 {
 	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
@@ -95,7 +96,9 @@ bool Server::setNonBlocking(int fd)
 	return true;
 }
 
-/*** @brief Finds free index in _poll registry */
+/*** @brief Finds free index in _poll registry
+ * Returns the first free client slot (1 to MAX_FDS - 1), or -1 if all slots are taken.
+*/
 int Server::findFreeInd()
 {
 	for(int i = 1; i < MAX_FDS; i++)
@@ -115,8 +118,9 @@ void Server::pollFds(int fd, int index, int events, int revents)
 }
 
 /*** @brief Here listening socket accepts newly dedicated socket.
- * Makes it non-blocking. It returns -1 when there nothing to receive.
- * Finds and registers client socket on a free space.
+ * Makes it non-blocking. Finds and registers client socket on a free space.
+ * Returns true if the client was registered in _poll, false if accept() or
+ * fcntl() failed or no slot was free (the new socket is closed in that case).
 */
 bool Server::cnctClient()
 {
@@ -164,9 +168,8 @@ void Server::dropClient(int i)
 }
 
 /*** @brief Receives data from the client socket into the buffer of MAX_BUFF.
- * Makes it non-blocking. It returns -1 when there nothing to receive.
- * If 0 or minus value received disconnect user from server.
- * Writes out a message terminated with \r\n or adds to save buffer.
+ *  If recv() returns 0 (client closed) or -1 (error),
+ * the client is disconnected from the server.
 */
 void Server::recvMsg(int i)
 {
